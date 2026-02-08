@@ -1,18 +1,39 @@
-import { createApp } from 'vue';
+import { createApp, reactive } from 'vue';
 import { o_router } from './o_router.js';
-import { o_state as o_state__ws, f_connect } from './o_service__websocket.js';
-import { o_config__default } from './constructors.module.js';
+import { o_state as o_state__ws, f_connect, f_register_handler } from './o_service__websocket.js';
+import { a_o_model, f_s_name_table__from_o_model } from './constructors.module.js';
+
+let o_state__dbdata = reactive({
+    b_loaded: false,
+});
+for (let o_model of a_o_model) {
+    let s_name_table = f_s_name_table__from_o_model(o_model);
+    o_state__dbdata[s_name_table] = [];
+}
+
+f_register_handler(function(o_data) {
+    if (o_data.s_type === 'crud' && o_data.s_name_table in o_state__dbdata) {
+        o_state__dbdata[o_data.s_name_table] = o_data.v_result || [];
+        if (o_data.s_name_table === 'a_o_config') {
+            o_state__dbdata.b_loaded = true;
+        }
+    }
+});
+
+globalThis.o_state__dbdata = o_state__dbdata;
 
 let o_app = createApp({
     data: function() {
         return {
             o_state__ws: o_state__ws,
+            o_state__dbdata: o_state__dbdata,
             a_o_page: [
                 { s_key: 'analyze_file', s_label: 'Analyze Files' },
                 { s_key: 'data', s_label: 'Data' },
                 { s_key: 'configuration', s_label: 'Configuration' },
+                { s_key: 'pose_viewer', s_label: 'Pose Viewer' },
             ],
-            o_config__default: 
+
         };
     },
     template: `
@@ -28,11 +49,12 @@ let o_app = createApp({
             </router-link>
         </nav>
 
-        <router-view v-slot="{ Component }">
+        <router-view v-if="o_state__dbdata.b_loaded" v-slot="{ Component }">
             <keep-alive>
                 <component :is="Component"></component>
             </keep-alive>
         </router-view>
+        <div v-else>loading config...</div>
 
         <div id="el_status">{{ o_state__ws.s_status }}</div>
     `,

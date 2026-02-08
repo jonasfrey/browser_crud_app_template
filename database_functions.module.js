@@ -1,16 +1,55 @@
 
-import { Database } from "jsr:@db/sqlite";
+import { Database } from "jsr:@db/sqlite@0.11";
 import {
     a_o_model,
     f_s_name_table__from_o_model,
     f_s_name_foreign_key__from_o_model,
     o_model__o_config,
-    o_config__default,
+    f_o_model_instance,
+    o_model__o_pose_filter,
 } from "./webserved_dir/constructors.module.js";
+import { s_root_dir } from "./runtimedata.module.js";
 
 let o_db = null;
 
 let s_path_database = './.gitignored/media_analyser.db';
+
+let o_config__default = f_o_model_instance(o_model__o_config, {
+    n_id: 1,
+    s_path_last_opened: `${s_root_dir}/.gitignored/COCO`,
+    a_s_filter_extension: ['mp4', 'jpg', 'jpeg', 'png', 'gif'],
+});
+let o_pose_filter__default = f_o_model_instance(o_model__o_pose_filter, {
+    n_id: 1,
+    s_name: 'arms_in_the_air',
+    s_f_b_show: (
+    (o_image, o_fsnode, a_o_pose)=>{
+        // we can filter poses here
+        let op1 = a_o_pose?.[0];
+        let a_s_name_keypoint = [
+            'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+            'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+            'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+            'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+        ];
+        console.log(op1)
+
+        for(let s of a_s_name_keypoint){
+            let o_keypoint = a_o_pose?.a_o_posekeypoint?.find(function(o){return o?.s_name === s});
+            if(o_keypoint){op1['o_' + s] = o_keypoint}
+        };
+
+        if(
+            op1?.o_left_wrist?.n_trn_y > op1?.o_left_shoulder?.n_trn_y
+            ||
+            op1?.o_right_wrist?.n_trn_y > op1?.o_right_shoulder?.n_trn_y
+        ){
+            return true
+        };
+        return false;
+    }).toString()
+});
+
 let f_init_db = async function(s_path_db = s_path_database) {
     o_db = new Database(s_path_db);
 
@@ -47,10 +86,32 @@ let f_init_db = async function(s_path_db = s_path_database) {
     }
 
     // ensure a default config row exists
-    let o_config__default_fromdb = (await f_v_crud__indb('read', o_model__o_config, { n_id: o_config__default.n_id }))?.at(0);
+    let o_config__default_fromdb = (await f_v_crud__indb(
+        'read', 
+        o_model__o_config,
+         { n_id: o_config__default.n_id })
+    )?.at(0);
+
     if(!o_config__default_fromdb){
-        await f_v_crud__indb('create', o_model__o_config, o_config__default);
+        await f_v_crud__indb(
+            'create', 
+            o_model__o_config, 
+            o_config__default
+    );
     }
+    let o_pose_filter__default_fromdb = (await f_v_crud__indb(
+        'read', 
+        o_model__o_pose_filter,
+            { n_id: o_pose_filter__default.n_id })
+    )?.at(0);
+    if(!o_pose_filter__default_fromdb){
+        await f_v_crud__indb(
+            'create',
+            o_model__o_pose_filter,
+            o_pose_filter__default
+        );
+    }
+
     console.log(o_config__default_fromdb);
     return o_db;
 };
@@ -112,7 +173,8 @@ let f_v_crud__indb = function(
                 s_query += ' WHERE ' + a_s_filter.join(' AND ');
             }
         }
-
+        // console.log(s_query);
+        // console.log(v_o_data);
         let a_o_row = o_db.prepare(s_query).all(...(v_o_data ? Object.values(v_o_data) : []));
         v_return = a_o_row
         

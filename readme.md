@@ -90,3 +90,24 @@ data persistance:
 - when the path has been changed and 'f_a_o_file' has been clicked. the path should be written to the config. when the page is reloaded that path should be read from config
 
 - when a folder is being analized. 
+
+### find out how the order of loading data works. 
+### show image or video info in the front end 
+the o_fsnode (files or folders) are loaded recursively . in the frontend currently only the names of folders or files are shown. if a file is a image or video show additional information such as size and duration 
+
+### batch processing images with vitpose 
+in the folder imageanalysis there is a vitpose batch processing python script. now i want to be able to process images from deno js by passing paths to the python script. the python script will return json output that then has to be stored in the database. the main function for this task is f_a_o_pose_from_a_o_img. it takes multiple o_img 
+the python script has to download large AI models. those have to go into the .gitignored folder
+
+
+### GUI page with image preview
+i want to have another gui page which is a kind of image preview mode. it shows an image and overlays the lines of the keypoints. all the images can be cycled trhough using 'l' for next image and 'k' for previous image. on the image there is also a overlay with the text info of the pose 
+
+
+### pose viewer canvas add text 
+add the name of the posekeypoin to the canvas on the pose viewer
+
+### pose viewer callback filter 
+there is a db table 'a_o_pose_filter' these are objects that should be loaded on the pose viewer. they can be activated or deactiated. if activated all the images are filtered depending on the return value of the 's_f_b_show' which is the string of the callback function that can be used with js new Function()...
+foreach pose filter add a monaco editor with the function string insde. also add a togler to activate and deactivate the filter. also add a expander to close and open the monaco editor. 
+add the possibility of creating a new filter and deleting a filter 

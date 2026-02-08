@@ -1,0 +1,21 @@
+
+============================================================
+PERSON 1
+============================================================
+nose            | x: 1038.49 | y:  248.85 | confidence: 0.998
+left_eye        | x: 1060.85 | y:  225.98 | confidence: 0.946
+right_eye       | x: 1021.80 | y:  225.31 | confidence: 0.896
+left_ear        | x: 1099.59 | y:  203.78 | confidence: 0.961
+right_ear       | x:  992.43 | y:  206.27 | confidence: 0.893
+left_shoulder   | x: 1144.30 | y:  301.44 | confidence: 0.943
+right_shoulder  | x:  952.83 | y:  269.22 | confidence: 0.908
+left_elbow      | x: 1147.28 | y:  449.20 | confidence: 0.997
+right_elbow     | x:  848.06 | y:  356.93 | confidence: 0.922
+left_wrist      | x: 1172.61 | y:  577.82 | confidence: 0.898
+right_wrist     | x:  922.29 | y:  374.28 | confidence: 0.985
+left_hip        | x: 1075.49 | y:  556.66 | confidence: 0.932
+right_hip       | x:  951.39 | y:  557.66 | confidence: 0.929
+left_knee       | x: 1097.74 | y:  639.39 | confidence: 0.829
+right_knee      | x: 1040.82 | y:  754.56 | confidence: 0.797
+left_ankle      | x: 1002.01 | y:  745.73 | confidence: 0.674
+right_ankle     | x: 1169.55 | y:  983.98 | confidence: 0.923

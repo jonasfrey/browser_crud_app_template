@@ -224,6 +224,77 @@ nav {
     margin-left: 10px;
 }
 
+/* pose viewer page */
+.pose_viewer__container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+.pose_viewer__image_wrap {
+    position: relative;
+    flex-shrink: 0;
+    max-width: 70%;
+}
+.pose_viewer__info {
+    flex: 1;
+    padding: 10px;
+    background: #0f1a30;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    max-height: 80vh;
+    overflow-y: auto;
+    font-size: 13px;
+}
+.info__media {
+    color: #8a8a8a;
+    font-size: 12px;
+    margin-left: 12px;
+}
+
+/* pose filter panel */
+.pose_filter__panel {
+    margin-bottom: 16px;
+    background: #0f1a30;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    padding: 10px;
+}
+.pose_filter__panel_header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.pose_filter__item {
+    margin-bottom: 6px;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    background: #16213e;
+}
+.pose_filter__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+}
+.pose_filter__name_input {
+    flex: 1;
+    padding: 3px 6px;
+    font-size: 12px;
+}
+.pose_filter__editor {
+    height: 200px;
+    border-top: 1px solid #0f3460;
+}
+.pose_filter__btn_active {
+    background: #1a5c3a;
+    color: #4ecca3;
+}
+.pose_filter__btn_inactive {
+    background: #0f3460;
+    color: #8a8a8a;
+}
+
 /* status bar */
 #el_status {
     padding: 4px 20px;

@@ -12,6 +12,22 @@ let f_add_b_expanded = function(a_o_fsnode) {
     }
 };
 
+// recursively collect all o_image__fromdb objects from the tree, including s_path_absolute from the fsnode
+let f_a_o_image__from_a_o_fsnode = function(a_o_fsnode) {
+    let a_o_image = [];
+    for (let o_fsnode of a_o_fsnode) {
+        if (o_fsnode.b_image && o_fsnode.o_image__fromdb) {
+            let o_image = Object.assign({}, o_fsnode.o_image__fromdb);
+            o_image.s_path_absolute = o_fsnode.s_path_absolute;
+            a_o_image.push(o_image);
+        }
+        if (o_fsnode.a_o_fsnode) {
+            a_o_image = a_o_image.concat(f_a_o_image__from_a_o_fsnode(o_fsnode.a_o_fsnode));
+        }
+    }
+    return a_o_image;
+};
+
 let o_component__page_analyze_file = {
     name: 'page-analyze-file',
     components: {
@@ -24,7 +40,13 @@ let o_component__page_analyze_file = {
                     v-model="s_path" @keydown.enter="f_scan_directory" />
                 <button class="btn" :disabled="!o_state__ws.b_connected"
                     @click="f_scan_directory">f_a_o_fsnode</button>
+                <button class="btn" :disabled="!o_state__ws.b_connected || a_o_fsnode.length === 0 || b_loading__pose"
+                    @click="f_run_pose_estimation">
+                    {{ b_loading__pose ? 'estimating poses...' : 'Run Pose Estimation' }}
+                </button>
             </div>
+            <div v-if="s_error__pose" class="message error">{{ s_error__pose }}</div>
+            <div v-if="s_result__pose" class="message">{{ s_result__pose }}</div>
             <div class="container__tree">
                 <div v-if="s_error__tree" class="message error">{{ s_error__tree }}</div>
                 <div v-else-if="b_loading__tree">loading...</div>
@@ -36,10 +58,13 @@ let o_component__page_analyze_file = {
     data: function() {
         return {
             o_state__ws: o_state__ws,
-            s_path: o_app.o_config.s_path_last_opened,
+            s_path: (o_state__dbdata.a_o_config[0]?.s_path_last_opened) || '',
             a_o_fsnode: [],
             s_error__tree: '',
             b_loading__tree: false,
+            b_loading__pose: false,
+            s_error__pose: '',
+            s_result__pose: '',
         };
     },
     methods: {
@@ -51,17 +76,35 @@ let o_component__page_analyze_file = {
             this.a_o_fsnode = [];
             f_send({ s_type: 'f_a_o_fsnode', s_path: s_path });
         },
+        f_run_pose_estimation: function() {
+            let a_o_image = f_a_o_image__from_a_o_fsnode(this.a_o_fsnode);
+            if (a_o_image.length === 0) return;
+            this.b_loading__pose = true;
+            this.s_error__pose = '';
+            this.s_result__pose = '';
+            f_send({ s_type: 'f_a_o_pose_from_a_o_img', a_o_image: a_o_image });
+        },
         f_handle_message: function(o_data) {
-            if (o_data.s_type !== 'f_a_o_fsnode') return;
-            this.b_loading__tree = false;
-            if (o_data.s_error) {
-                this.s_error__tree = o_data.s_error;
-                this.a_o_fsnode = [];
-                return;
+            if (o_data.s_type === 'f_a_o_fsnode') {
+                this.b_loading__tree = false;
+                if (o_data.s_error) {
+                    this.s_error__tree = o_data.s_error;
+                    this.a_o_fsnode = [];
+                    return;
+                }
+                this.s_error__tree = '';
+                f_add_b_expanded(o_data.a_o_fsnode);
+                this.a_o_fsnode = o_data.a_o_fsnode;
             }
-            this.s_error__tree = '';
-            f_add_b_expanded(o_data.a_o_fsnode);
-            this.a_o_fsnode = o_data.a_o_fsnode;
+            if (o_data.s_type === 'f_a_o_pose_from_a_o_img') {
+                this.b_loading__pose = false;
+                if (o_data.s_error) {
+                    this.s_error__pose = o_data.s_error;
+                    return;
+                }
+                let n_pose = o_data.a_o_pose ? o_data.a_o_pose.length : 0;
+                this.s_result__pose = 'Pose estimation done: ' + n_pose + ' pose(s) found';
+            }
         },
     },
     created: function() {
