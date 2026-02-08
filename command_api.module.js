@@ -117,12 +117,15 @@ let f_download_vitpose_model = async function(){
 
 // batch processing because the python script loads AI models once per call
 // a_o_image: array of o_image objects, each must have n_id and s_path_absolute (from joined fsnode)
-let f_a_o_pose_from_a_o_img = async function(a_o_image){
+let f_a_o_pose_from_a_o_img = async function(a_o_image, f_on_progress = null){
   let a_o_pose__result = [];
   let a_o_image__to_process = [];
+  let n_len = a_o_image.length;
 
   // check which images already have pose data in db
-  for(let o_image of a_o_image){
+  for(let n_idx = 0; n_idx < n_len; n_idx++){
+    let o_image = a_o_image[n_idx];
+    if(f_on_progress) f_on_progress('checking cache: ' + (n_idx + 1) + '/' + n_len);
     let a_o_pose__fromdb = f_v_crud__indb(
       'read',
       o_model__o_pose,
@@ -154,6 +157,7 @@ let f_a_o_pose_from_a_o_img = async function(a_o_image){
   let s_path_script = s_root_dir + s_ds + 'imageanalysis' + s_ds + 'vitpose_batch_processing.py';
 
   console.log(`Running pose estimation on ${a_s_path.length} images...`);
+  if(f_on_progress) f_on_progress('loading AI models...');
 
   let o_command = new Deno.Command("python3", {
     args: [s_path_script, '--model-dir', s_path_model_dir, ...a_s_path],
@@ -161,20 +165,62 @@ let f_a_o_pose_from_a_o_img = async function(a_o_image){
     stderr: "piped",
   });
 
-  let o_output = await o_command.output();
-  let s_stderr = new TextDecoder().decode(o_output.stderr);
-  console.log('Python stderr:', s_stderr);
+  // stream stderr to get real-time progress from python script
+  // must read both stdout and stderr concurrently to avoid pipe buffer deadlock
+  let o_child = o_command.spawn();
+  let o_decoder = new TextDecoder();
 
-  if(!o_output.success){
+  let a_n_byte__stderr = [];
+  let o_reader__stderr = o_child.stderr.getReader();
+  let s_line_buf = '';
+
+  let f_read_stderr = async function(){
+    while(true){
+      let { done, value } = await o_reader__stderr.read();
+      if(done) break;
+      a_n_byte__stderr.push(value);
+      s_line_buf += o_decoder.decode(value, { stream: true });
+      let a_s_line = s_line_buf.split('\n');
+      s_line_buf = a_s_line.pop();
+      for(let s_line of a_s_line){
+        let s_trimmed = s_line.trim();
+        if(s_trimmed.length > 0){
+          console.log('Python:', s_trimmed);
+          if(f_on_progress && s_trimmed.startsWith('Processing ')){
+            f_on_progress('pose estimation: ' + s_trimmed);
+          }
+        }
+      }
+    }
+  };
+
+  let a_n_byte__stdout = [];
+  let o_reader__stdout = o_child.stdout.getReader();
+
+  let f_read_stdout = async function(){
+    while(true){
+      let { done, value } = await o_reader__stdout.read();
+      if(done) break;
+      a_n_byte__stdout.push(value);
+    }
+  };
+
+  let [_, __, o_status] = await Promise.all([f_read_stderr(), f_read_stdout(), o_child.status]);
+
+  if(!o_status.success){
+    let s_stderr = a_n_byte__stderr.map(function(v){ return o_decoder.decode(v); }).join('');
     throw new Error('Python pose estimation failed: ' + s_stderr);
   }
 
-  let s_stdout = new TextDecoder().decode(o_output.stdout).trim();
+  let s_stdout = a_n_byte__stdout.map(function(v){ return o_decoder.decode(v); }).join('').trim();
   let o_result_json = JSON.parse(s_stdout);
 
   // store results in db
-  for(let o_result of o_result_json.results){
+  let n_len__result = o_result_json.results.length;
+  for(let n_idx = 0; n_idx < n_len__result; n_idx++){
+    let o_result = o_result_json.results[n_idx];
     if(!o_result.success) continue;
+    if(f_on_progress) f_on_progress('storing results: ' + (n_idx + 1) + '/' + n_len__result);
 
     // find the matching o_image by path
     let o_image = a_o_image__to_process.find(function(o){

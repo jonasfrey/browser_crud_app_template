@@ -15,11 +15,6 @@ let o_component__page_configuration = {
                 <input type="text" class="input" placeholder="/path/to/last/opened"
                     v-model="s_path_last_opened" />
             </div>
-            <div class="form_group">
-                <label>a_s_filter_extension (comma separated)</label>
-                <input type="text" class="input" placeholder="mp4, jpg, jpeg, png, gif"
-                    v-model="s_a_s_filter_extension" />
-            </div>
             <button class="btn" :disabled="!o_state__ws.b_connected"
                 @click="f_config_save">save</button>
             <div class="message"
@@ -33,7 +28,6 @@ let o_component__page_configuration = {
         return {
             o_state__ws: o_state__ws,
             s_path_last_opened: '',
-            s_a_s_filter_extension: '',
             s_message__config: '',
             b_message_config_error: false,
         };
@@ -50,15 +44,9 @@ let o_component__page_configuration = {
         f_config_populate: function(o_config) {
             if (!o_config) return;
             this.s_path_last_opened = o_config.s_path_last_opened || '';
-            this.s_a_s_filter_extension = (o_config.a_s_filter_extension || []).join(', ');
         },
 
         f_config_save: function() {
-            let a_s_filter_extension = this.s_a_s_filter_extension
-                .split(',')
-                .map(function(s) { return s.trim(); })
-                .filter(function(s) { return s.length > 0; });
-
             f_send({
                 s_type: 'crud',
                 s_name_crud: 'update',
@@ -66,7 +54,6 @@ let o_component__page_configuration = {
                 v_o_data: { n_id: 1 },
                 v_o_data_update: {
                     s_path_last_opened: this.s_path_last_opened.trim(),
-                    a_s_filter_extension: a_s_filter_extension,
                 },
             });
         },

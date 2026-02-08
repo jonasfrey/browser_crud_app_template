@@ -2,7 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import { o_component__page_analyze_file } from './o_component__page_analyze_file.js';
 import { o_component__page_data } from './o_component__page_data.js';
 import { o_component__page_configuration } from './o_component__page_configuration.js';
-import { o_component__page_pose_viewer } from './o_component__page_pose_viewer.js';
+import { o_component__page_image_viewer } from './o_component__page_image_viewer.js';
 
 let a_o_route = [
     {
@@ -25,9 +25,9 @@ let a_o_route = [
         component: o_component__page_configuration,
     },
     {
-        path: '/pose_viewer',
-        name: 'pose_viewer',
-        component: o_component__page_pose_viewer,
+        path: '/image_viewer',
+        name: 'image_viewer',
+        component: o_component__page_image_viewer,
     },
 ];
 

@@ -18,13 +18,13 @@ import {
     f_download_vitpose_model,
 } from "./command_api.module.js";
 import {
-    s_ds
+    s_ds,
+    s_root_dir,
 } from "./runtimedata.module.js";
 
 f_init_db();
 
 let n_port = 8000;
-
 
 let f_s_content_type = function(s_path) {
     if (s_path.endsWith('.html')) return 'text/html';
@@ -39,6 +39,7 @@ await f_download_vitpose_model();
 
 let f_handler = async function(o_request) {
     // websocket upgrade
+    
     if (o_request.headers.get('upgrade') === 'websocket') {
         let { socket: o_socket, response: o_response } = Deno.upgradeWebSocket(o_request);
 
@@ -57,6 +58,10 @@ let f_handler = async function(o_request) {
                 s_name_table: 'a_o_config',
                 v_result: a_o_config
             }));
+            o_socket.send(JSON.stringify({
+                s_type: 'init',
+                s_root_dir: s_root_dir,
+            }));
         };
 
         o_socket.onmessage = async function(o_evt) {
@@ -72,7 +77,14 @@ let f_handler = async function(o_request) {
                         }));
                         return;
                     }
-                    let a_o_fsnode = await f_a_o_fsnode__from_path_recursive(o_data.s_path);
+                    let f_on_progress = function(s_message){
+                        o_socket.send(JSON.stringify({
+                            s_type: 'progress',
+                            s_task: 'f_a_o_fsnode',
+                            s_message,
+                        }));
+                    };
+                    let a_o_fsnode = await f_a_o_fsnode__from_path_recursive(o_data.s_path, null, f_on_progress);
 
                     o_socket.send(JSON.stringify({
                         s_type: 'f_a_o_fsnode',
@@ -116,7 +128,14 @@ let f_handler = async function(o_request) {
             }
             if(o_data.s_type === 'f_a_o_pose_from_a_o_img'){
                 try {
-                    let a_o_pose = await f_a_o_pose_from_a_o_img(o_data.a_o_image);
+                    let f_on_progress = function(s_message){
+                        o_socket.send(JSON.stringify({
+                            s_type: 'progress',
+                            s_task: 'f_a_o_pose_from_a_o_img',
+                            s_message,
+                        }));
+                    };
+                    let a_o_pose = await f_a_o_pose_from_a_o_img(o_data.a_o_image, f_on_progress);
                     o_socket.send(JSON.stringify({
                         s_type: 'f_a_o_pose_from_a_o_img',
                         a_o_pose,
@@ -169,6 +188,42 @@ let f_handler = async function(o_request) {
 
     let o_url = new URL(o_request.url);
     let s_path = o_url.pathname;
+
+    // provide direct access to Deno specifc functions like Deno.writeFile through standard http requests
+    let a_o_exposed = [
+        {
+            s_name :"deno_copy_file",
+            f_function: async function(s_path_src, s_path_dest){
+                await Deno.copyFile(s_path_src, s_path_dest);
+            }
+        },
+        {
+            s_name :"deno_stat",
+            f_function: async function(s_path){
+                return await Deno.stat(s_path);   
+            }
+        }, 
+        {
+            s_name : "deno_mkdir",
+            f_function: async function(s_path){
+                await Deno.mkdir(s_path, { recursive: true });
+            }
+        },
+    ]
+    let o_exposed = a_o_exposed.find(o=>o.s_name === s_path.slice('/api/'.length));
+    if(o_exposed){
+        try {
+            let o_data = await o_request.json();
+            let a_s_argument = o_data.a_s_argument;
+            let v_result = await o_exposed.f_function(...a_s_argument);
+            return new Response(JSON.stringify({ v_result }), {
+                headers: { 'content-type': 'application/json' },
+            });
+        } catch (o_error) {
+            return new Response('Error: ' + o_error.message, { status: 500 });
+        }
+    }
+
 
     // serve image from absolute path
     if (s_path === '/api/image') {

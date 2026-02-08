@@ -111,3 +111,30 @@ add the name of the posekeypoin to the canvas on the pose viewer
 there is a db table 'a_o_pose_filter' these are objects that should be loaded on the pose viewer. they can be activated or deactiated. if activated all the images are filtered depending on the return value of the 's_f_b_show' which is the string of the callback function that can be used with js new Function()...
 foreach pose filter add a monaco editor with the function string insde. also add a togler to activate and deactivate the filter. also add a expander to close and open the monaco editor. 
 add the possibility of creating a new filter and deleting a filter 
+
+
+### handling large amount of large sized files
+at the moment the loading of fs nodes works. also does the pose estimation work. but if the amount of files is very large and if the files themself are heavy the loading takes some time. this is no where indicated in the client application. however there is a websocket that can inform the client in real time of what is going on. make use of this.  
+
+### bug fix
+somehow the pose estimation with python does not work anymore or the result is not saved in the DB 
+
+### pose viewer rename
+#### refactoring
+the 'o_pose_filter' was renamed to 'o_image_filter' 
+then 'o_image_filter' was renamed to 'o_image_postprocessor'
+the 'o_config.a_s_filter_extension' prop was removed 
+
+#### aditional features
+rename the 'pose viewer' to 'image viewer' since there will be more data related to images that will be gathered with python script , like for example yolo image classification and salesforce/blip image to text. 
+in the image viewer there should be the possibility to toggle 'pose lines' , 'pose keypoint labels' , 'image areas'(will come later with yolo), and more that is coming. 
+
+in the image viewer in the section  'Filters' only postprocessors with b_filter == true, shoulb be shown, 
+for all other postprocessors there should be a new section  'postprocessors'. 
+next to each such postprocessor there should be a button to manually execute the postprocessor on all filtered images
+
+
+### user guidance
+the user could go to the image viewer page and load images with poses even if there is no data. if there is no data a message should be shown that first files have to be 'analyzed'
+on the image viewer there should be the number of analyzed files
+'s_root_dir' should be available on client side and should be passed to the callback functions on the client side   

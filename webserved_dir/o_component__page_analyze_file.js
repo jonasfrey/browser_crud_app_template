@@ -47,9 +47,13 @@ let o_component__page_analyze_file = {
             </div>
             <div v-if="s_error__pose" class="message error">{{ s_error__pose }}</div>
             <div v-if="s_result__pose" class="message">{{ s_result__pose }}</div>
+            <div v-if="b_loading__pose && s_progress__pose" class="progress">{{ s_progress__pose }}</div>
             <div class="container__tree">
                 <div v-if="s_error__tree" class="message error">{{ s_error__tree }}</div>
-                <div v-else-if="b_loading__tree">loading...</div>
+                <div v-else-if="b_loading__tree">
+                    <div>loading...</div>
+                    <div v-if="s_progress__tree" class="progress">{{ s_progress__tree }}</div>
+                </div>
                 <file-tree v-else-if="a_o_fsnode.length > 0"
                     :a_o_fsnode="a_o_fsnode" :n_depth="0"></file-tree>
             </div>
@@ -65,6 +69,8 @@ let o_component__page_analyze_file = {
             b_loading__pose: false,
             s_error__pose: '',
             s_result__pose: '',
+            s_progress__tree: '',
+            s_progress__pose: '',
         };
     },
     methods: {
@@ -85,8 +91,18 @@ let o_component__page_analyze_file = {
             f_send({ s_type: 'f_a_o_pose_from_a_o_img', a_o_image: a_o_image });
         },
         f_handle_message: function(o_data) {
+            if (o_data.s_type === 'progress') {
+                if (o_data.s_task === 'f_a_o_fsnode') {
+                    this.s_progress__tree = o_data.s_message;
+                }
+                if (o_data.s_task === 'f_a_o_pose_from_a_o_img') {
+                    this.s_progress__pose = o_data.s_message;
+                }
+                return;
+            }
             if (o_data.s_type === 'f_a_o_fsnode') {
                 this.b_loading__tree = false;
+                this.s_progress__tree = '';
                 if (o_data.s_error) {
                     this.s_error__tree = o_data.s_error;
                     this.a_o_fsnode = [];
@@ -98,6 +114,7 @@ let o_component__page_analyze_file = {
             }
             if (o_data.s_type === 'f_a_o_pose_from_a_o_img') {
                 this.b_loading__pose = false;
+                this.s_progress__pose = '';
                 if (o_data.s_error) {
                     this.s_error__pose = o_data.s_error;
                     return;

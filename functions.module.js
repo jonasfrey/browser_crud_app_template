@@ -59,6 +59,48 @@ let f_download_urls_to_dir = async function(a_s_url, s_path_dir) {
         }
     }
 }
+let f_unzip_with_progress = async function(s_path_zip) {
+        try {
+        console.log('Starting unzip...');
+        
+        const command = new Deno.Command('unzip', {
+            args: [s_path_zip, '-d', `${s_root_dir}${s_ds}.gitignored${s_ds}COCO`],
+            stdout: 'piped',
+            stderr: 'piped'
+        });
+        
+        const process = command.spawn();
+        const { code, stdout, stderr } = await process.output();
+        
+        if (code === 0) {
+            console.log(`✓ Unzipped successfully: ${s_path_zip}`);
+        } else {
+            const errorString = new TextDecoder().decode(stderr);
+            console.error(`Error unzipping ${s_path_zip}:`, errorString);
+        }
+    } catch (o_error) {
+        console.error(`Error unzipping ${s_path_zip}:`, o_error.message);
+    }
+
+    let n_files_to_keep = 100;
+    // only keep the first 1000 images in val2017 to save disk space
+    let s_path_val2017 = `${s_root_dir}${s_ds}.gitignored${s_ds}COCO${s_ds}val2017`;
+    try {
+        let n_count = 0;
+        for await (let o_dir_entry of Deno.readDir(s_path_val2017)) {
+            if (n_count >= n_files_to_keep) {
+                // delete the rest of the files
+                let s_path_file = `${s_path_val2017}${s_ds}${o_dir_entry.name}`;
+                await Deno.remove(s_path_file);
+            } else {
+                n_count++;
+            }
+        }
+        console.log('✓ Kept only the first 1000 images in val2017');
+    } catch (o_error) {
+        console.error(`Error processing ${s_path_val2017}:`, o_error.message);
+    }
+}
 let f_create_test_data = async function() {
 
     //convert this to javascript 
@@ -146,9 +188,86 @@ let f_create_test_data = async function() {
     ]; 
     await f_download_urls_to_dir(a_s_imgurl3, s_name_dir3);
 
+    // Download zip with progress
+    let s_url_zip = 'http://images.cocodataset.org/zips/val2017.zip';
+    let s_path_zip = `${s_root_dir}${s_ds}.gitignored${s_ds}COCO${s_ds}val2017.zip`;
+
+    //check if file exists
+    try {
+        await Deno.stat(s_path_zip);
+        console.log(`File already exists: ${s_path_zip}`);
+    } catch (o_error) {
+        if (o_error instanceof Deno.errors.NotFound) {
+            console.log(`File does not exist, starting download: ${s_path_zip}`);
+            try {
+                let o_response = await fetch(s_url_zip);
+                if (!o_response.ok) {
+                    throw new Error(`Failed to download ${s_url_zip}: ${o_response.statusText}`);
+                }
+                
+                // Get total file size
+                const n_total_bytes = parseInt(o_response.headers.get('content-length') || '0');
+                const reader = o_response.body.getReader();
+                
+                // Open file for writing
+                const file = await Deno.open(s_path_zip, { write: true, create: true });
+                
+                let n_downloaded_bytes = 0;
+                let n_last_percent = 0;
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) break;
+                    
+                    // Write chunk to file
+                    await file.write(value);
+                    
+                    // Update progress
+                    n_downloaded_bytes += value.length;
+                    const n_percent = Math.floor((n_downloaded_bytes / n_total_bytes) * 100);
+                    
+                    // Only log when percentage changes (avoid spam)
+                    if (n_percent !== n_last_percent) {
+                        const n_mb_downloaded = (n_downloaded_bytes / 1024 / 1024).toFixed(2);
+                        const n_mb_total = (n_total_bytes / 1024 / 1024).toFixed(2);
+                        console.log(`Downloading large image dataset: ${n_percent}% (${n_mb_downloaded}MB / ${n_mb_total}MB)`);
+                        n_last_percent = n_percent;
+                    }
+                }
+                
+                file.close();
+                console.log(`✓ Downloaded and saved: ${s_path_zip}`);
+                
+            } catch (o_error) {
+                console.error(`Error downloading ${s_url_zip}:`, o_error.message);
+            }
+
+        } else {
+            console.error(`Error checking file: ${s_path_zip}`, o_error.message);
+            return;
+        }
+    }
+
+    // Unzip using Deno.Command (modern API, Deno.run is deprecated)
+    // check if unziped folder exists
+    let s_path_unzipped = `${s_root_dir}${s_ds}.gitignored${s_ds}COCO${s_ds}val2017`;
+    try {
+        await Deno.stat(s_path_unzipped);
+        console.log(`Unzipped folder already exists: ${s_path_unzipped}`);
+    } catch (o_error) {
+        if (o_error instanceof Deno.errors.NotFound) {
+            console.log(`Unzipped folder does not exist, starting unzip: ${s_path_unzipped}`);
+            await f_unzip_with_progress(s_path_zip);
+        } else {
+            console.error(`Error checking unzipped folder: ${s_path_unzipped}`, o_error.message);
+            return;
+        }
+    }
+
 
 }
-let f_a_o_fsnode__from_path_recursive = async function(s_path, o_fsnode_parent = null) {
+let f_a_o_fsnode__from_path_recursive = async function(s_path, o_fsnode_parent = null, f_on_progress = null) {
     let a_o = [];
 
     // to prevent error Error reading directory: /home/jonas/asdf Cannot read properties of undefined (reading 'split')
@@ -170,6 +289,7 @@ let f_a_o_fsnode__from_path_recursive = async function(s_path, o_fsnode_parent =
             // get size 
             let o_stat = await Deno.stat(s_path_absolute);
             // console.log(o_stat)
+            if(f_on_progress) f_on_progress('scanning: ' + o_dir_entry.name);
             let s_filetype = (!o_dir_entry.isDirectory) ? await f_s_filetype_from_s_path_abs(s_path_absolute) : "unknown";
 
             let b_image = s_filetype === 'image';
@@ -212,16 +332,18 @@ let f_a_o_fsnode__from_path_recursive = async function(s_path, o_fsnode_parent =
             o_fsnode.s_name = o_fsnode.s_path_absolute.split(s_ds).at(-1);
 
             if(b_image){
+                if(f_on_progress) f_on_progress('extracting image metadata: ' + o_dir_entry.name);
                 let o_image__fromdb = await f_o_image__from_o_fsnode(o_fsnode);
                 o_fsnode.o_image__fromdb = o_image__fromdb;
             }
             if(b_video){
+                if(f_on_progress) f_on_progress('extracting video metadata: ' + o_dir_entry.name);
                 let o_video__fromdb = await f_o_video__from_o_fsnode(o_fsnode);
                 o_fsnode.o_video__fromdb = o_video__fromdb;
             }
 
             if (o_dir_entry.isDirectory) {
-                o_fsnode.a_o_fsnode = await f_a_o_fsnode__from_path_recursive(s_path_absolute, o_fsnode);
+                o_fsnode.a_o_fsnode = await f_a_o_fsnode__from_path_recursive(s_path_absolute, o_fsnode, f_on_progress);
             }
 
             a_o.push(o_fsnode);

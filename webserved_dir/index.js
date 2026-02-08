@@ -12,6 +12,9 @@ for (let o_model of a_o_model) {
 }
 
 f_register_handler(function(o_data) {
+    if (o_data.s_type === 'init') {
+        globalThis.s_root_dir = o_data.s_root_dir || '';
+    }
     if (o_data.s_type === 'crud' && o_data.s_name_table in o_state__dbdata) {
         o_state__dbdata[o_data.s_name_table] = o_data.v_result || [];
         if (o_data.s_name_table === 'a_o_config') {
@@ -31,7 +34,7 @@ let o_app = createApp({
                 { s_key: 'analyze_file', s_label: 'Analyze Files' },
                 { s_key: 'data', s_label: 'Data' },
                 { s_key: 'configuration', s_label: 'Configuration' },
-                { s_key: 'pose_viewer', s_label: 'Pose Viewer' },
+                { s_key: 'image_viewer', s_label: 'Image Viewer' },
             ],
 
         };

@@ -61,7 +61,6 @@ let o_model__o_config = f_o_model({
     a_o_property: [
         f_o_model_prop__default_id('n_id'),
         f_o_modprop('s_path_last_opened', 'string', (s)=>{return s!==''}),
-        f_o_modprop('a_s_filter_extension', 'array'),
     ]
 })
 
@@ -138,13 +137,14 @@ let o_model__o_posekeypoint = f_o_model({
     ]
 });
 
-let o_model__o_pose_filter = f_o_model({
-    s_name: 'o_pose_filter',
+let o_model__o_image_postprocessor = f_o_model({
+    s_name: 'o_image_postprocessor',
     a_o_property: [
         f_o_model_prop__default_id('n_id'),
         f_o_modprop('s_name', 'string', (s)=>{return s!==''}),
         f_o_modprop('s_f_b_show', 'string', (s)=>{return s}),
         f_o_modprop('b_active', 'boolean'),
+        f_o_modprop('b_filter', 'boolean'),
     ]
 });
 
@@ -157,7 +157,7 @@ let a_o_model = [
     o_model__o_image_area,
     o_model__o_pose, 
     o_model__o_posekeypoint,
-    o_model__o_pose_filter,
+    o_model__o_image_postprocessor,
 ];
 
 
@@ -175,7 +175,7 @@ export {
     o_model__o_image_area,
     o_model__o_pose,
     o_model__o_posekeypoint,
-    o_model__o_pose_filter,
+    o_model__o_image_postprocessor,
     a_o_model,
     f_s_name_table__from_o_model,
     f_s_name_foreign_key__from_o_model,

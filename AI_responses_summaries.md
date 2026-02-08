@@ -15,3 +15,7 @@
 2026-02-08 - added Pose Viewer page: /api/image endpoint for serving images, f_a_o_image__with_pose backend query, canvas skeleton overlay with COCO connections, k/l keyboard navigation, per-person color coding
 2026-02-08 - added posekeypoint name text labels on canvas next to each keypoint dot in pose viewer
 2026-02-08 - added pose viewer callback filters: b_active field on o_pose_filter model, Monaco editor per filter with collapsible panels, on/off toggle, create/delete via CRUD, active filters applied as new Function() callbacks to filter displayed images
+2026-02-08 - added real-time WebSocket progress reporting for directory scanning and pose estimation via f_on_progress callbacks, streaming Python stderr for per-image updates
+2026-02-08 - fixed pose estimation deadlock: read stdout concurrently with stderr via Promise.all to prevent pipe buffer blocking
+2026-02-08 - renamed Pose Viewer to Image Viewer, split filters/postprocessors by b_filter flag, added canvas toggle buttons for pose lines/keypoint labels/image areas, added execute button for postprocessors, removed a_s_filter_extension from config
+2026-02-08 - added user guidance: empty-data message pointing to Analyze Files, analyzed image count display, s_root_dir sent from server via init WS message and passed as 4th arg to filter/postprocessor callbacks

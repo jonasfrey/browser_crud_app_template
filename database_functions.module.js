@@ -6,9 +6,9 @@ import {
     f_s_name_foreign_key__from_o_model,
     o_model__o_config,
     f_o_model_instance,
-    o_model__o_pose_filter,
+    o_model__o_image_postprocessor,
 } from "./webserved_dir/constructors.module.js";
-import { s_root_dir } from "./runtimedata.module.js";
+import { s_ds, s_root_dir } from "./runtimedata.module.js";
 
 let o_db = null;
 
@@ -17,11 +17,21 @@ let s_path_database = './.gitignored/media_analyser.db';
 let o_config__default = f_o_model_instance(o_model__o_config, {
     n_id: 1,
     s_path_last_opened: `${s_root_dir}/.gitignored/COCO`,
-    a_s_filter_extension: ['mp4', 'jpg', 'jpeg', 'png', 'gif'],
 });
-let o_pose_filter__default = f_o_model_instance(o_model__o_pose_filter, {
+let o_image_postprocessor__default = f_o_model_instance(o_model__o_image_postprocessor, {
     n_id: 1,
-    s_name: 'arms_in_the_air',
+    s_name: 'filter_single_person_in_image',
+    s_f_b_show: (
+    (o_image, o_fsnode, a_o_pose)=>{
+        return a_o_pose.length == 1;
+    }
+    ).toString(), 
+    b_filter : true, 
+    b_active : false, 
+});
+let o_image_postprocessor__default2 = f_o_model_instance(o_model__o_image_postprocessor, {
+    n_id: 2,
+    s_name: 'filter_person_with_hands_in_the_air',
     s_f_b_show: (
     (o_image, o_fsnode, a_o_pose)=>{
         // we can filter poses here
@@ -32,25 +42,63 @@ let o_pose_filter__default = f_o_model_instance(o_model__o_pose_filter, {
             'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
             'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
         ];
-        console.log(op1)
 
         for(let s of a_s_name_keypoint){
-            let o_keypoint = a_o_pose?.a_o_posekeypoint?.find(function(o){return o?.s_name === s});
+            let o_keypoint = op1?.a_o_posekeypoint?.find(function(o){return o?.s_name === s});
             if(o_keypoint){op1['o_' + s] = o_keypoint}
         };
 
         if(
-            op1?.o_left_wrist?.n_trn_y > op1?.o_left_shoulder?.n_trn_y
-            ||
-            op1?.o_right_wrist?.n_trn_y > op1?.o_right_shoulder?.n_trn_y
+            op1?.o_left_wrist?.n_trn_y < op1?.o_left_shoulder?.n_trn_y
+            &&
+            op1?.o_right_wrist?.n_trn_y < op1?.o_right_shoulder?.n_trn_y
         ){
             return true
-        };
+        }
         return false;
-    }).toString()
+    }
+    ).toString(), 
+    b_filter : true, 
+    b_active : false, 
+});
+let o_image_postprocessor__copy_filtered_files = f_o_model_instance(o_model__o_image_postprocessor, {
+    n_id: 3,
+    s_name: 'postprocessor_copy_filtered_files',
+    s_f_b_show: (
+    async (o_image, o_fsnode, a_o_pose)=>{
+        let s_path_dir = `${s_root_dir}/.gitignored/filtered_images/`;
+        let s_path_to_copy_to = `${s_path_dir}/${o_fsnode.s_name}`;
+        await fetch('/api/deno_mkdir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ a_s_argument: [s_path_dir] })
+        });
+        try {
+            
+            let o_resp = await fetch('/api/deno_stat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ a_s_argument: [s_path_to_copy_to] })
+            }).then(res => res.json());
+            console.log(o_resp)
+            
+        } catch (error) {
+            await fetch('/api/deno_copy_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ a_s_argument: [o_fsnode.s_path_absolute, s_path_to_copy_to] })
+            });
+        }
+    }
+    ).toString(), 
+    b_filter : false, 
+    b_active : false, 
 });
 
 let f_init_db = async function(s_path_db = s_path_database) {
+    //make sure the folder where db should be stored exists
+    await Deno.mkdir(s_path_db.slice(0, s_path_db.lastIndexOf(s_ds)), { recursive: true });
+
     o_db = new Database(s_path_db);
 
     for (let o_model of a_o_model) {
@@ -99,18 +147,26 @@ let f_init_db = async function(s_path_db = s_path_database) {
             o_config__default
     );
     }
-    let o_pose_filter__default_fromdb = (await f_v_crud__indb(
-        'read', 
-        o_model__o_pose_filter,
-            { n_id: o_pose_filter__default.n_id })
-    )?.at(0);
-    if(!o_pose_filter__default_fromdb){
-        await f_v_crud__indb(
-            'create',
-            o_model__o_pose_filter,
-            o_pose_filter__default
+    for(let o_image_postprocessor of [
+        o_image_postprocessor__default,
+        o_image_postprocessor__default2,
+        o_image_postprocessor__copy_filtered_files
+    ]){
+        let o_image_postprocessor__fromdb = (await f_v_crud__indb(
+            'read', 
+            o_model__o_image_postprocessor,
+             { n_id: o_image_postprocessor.n_id })
+        )?.at(0);
+            
+        if(!o_image_postprocessor__fromdb){
+            await f_v_crud__indb(
+                'create', 
+                o_model__o_image_postprocessor, 
+                o_image_postprocessor
         );
+        }
     }
+
 
     console.log(o_config__default_fromdb);
     return o_db;
