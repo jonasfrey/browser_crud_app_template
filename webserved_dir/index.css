@@ -78,7 +78,37 @@ nav {
     background: #16213e;
     border: 1px solid #0f3460;
     border-radius: 4px;
-    min-height: 100px;
+}
+.container__tree_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #0f3460;
+}
+.entry__row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+.entry__row:hover {
+    background: #1a2744;
+}
+.entry__row .entry__directory,
+.entry__row .entry__file {
+    flex: 1;
+    min-width: 0;
+}
+.entry__btn_delete {
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+.entry__row:hover .entry__btn_delete {
+    opacity: 1;
 }
 .entry__directory {
     cursor: pointer;

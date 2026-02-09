@@ -6,6 +6,7 @@ import {
     f_o_model_instance,
     o_model__o_fsnode,
     o_model__o_image,
+    o_model__o_video,
     o_model__o_pose,
     o_model__o_posekeypoint,
 } from "./webserved_dir/constructors.module.js";
@@ -282,6 +283,40 @@ let f_a_o_fsnode__from_path_recursive = async function(s_path, o_fsnode_parent =
         return a_o;
     }
 
+    // create a root folder fsnode for the scanned directory so children are nested under it
+    if (!o_fsnode_parent) {
+        let o_stat__root = await Deno.stat(s_path);
+        let o_fsnode__root = f_o_model_instance(
+            o_model__o_fsnode,
+            {
+                s_path_absolute: s_path,
+                s_name: s_path.split(s_ds).at(-1),
+                n_bytes: o_stat__root.size,
+                b_folder: true,
+                n_o_fsnode_n_id: null,
+                b_image: false,
+                b_video: false,
+            }
+        );
+        let o_fsnode__fromdb = (f_v_crud__indb(
+            'read',
+            o_model__o_fsnode,
+            { s_path_absolute: s_path }
+        ))?.at(0);
+        if (o_fsnode__fromdb) {
+            o_fsnode__root.n_id = o_fsnode__fromdb.n_id;
+        } else {
+            let o_created = await f_v_crud__indb(
+                'create',
+                o_model__o_fsnode,
+                o_fsnode__root
+            );
+            o_fsnode__root.n_id = o_created.n_id;
+        }
+        o_fsnode__root.a_o_fsnode = await f_a_o_fsnode__from_path_recursive(s_path, o_fsnode__root, f_on_progress);
+        return [o_fsnode__root];
+    }
+
     try {
         for await (let o_dir_entry of Deno.readDir(s_path)) {
             // console.log(o_dir_entry)
@@ -452,8 +487,106 @@ let f_a_o_image__with_pose = function() {
     return a_o_result;
 }
 
+// reconstruct fsnode tree from flat DB records
+// returns array of root-level trees (multiple branches if scanned from different directories)
+let f_a_o_fsnode__from_db = function() {
+    let a_o_fsnode = f_v_crud__indb('read', o_model__o_fsnode, {}) || [];
+    // build lookup by n_id
+    let o_by_id = {};
+    for (let o of a_o_fsnode) {
+        o.a_o_fsnode = [];
+        o_by_id[o.n_id] = o;
+    }
+    // build tree by linking children to parents
+    let a_o_root = [];
+    for (let o of a_o_fsnode) {
+        if (o.n_o_fsnode_n_id && o_by_id[o.n_o_fsnode_n_id]) {
+            o_by_id[o.n_o_fsnode_n_id].a_o_fsnode.push(o);
+        } else {
+            a_o_root.push(o);
+        }
+    }
+    // group orphan non-folder root nodes under their parent directory
+    let o_group__by_parent = {};
+    let a_o_root__grouped = [];
+    for (let o of a_o_root) {
+        if (o.b_folder) {
+            a_o_root__grouped.push(o);
+        } else {
+            let a_s_part = o.s_path_absolute.split('/');
+            a_s_part.pop();
+            let s_parent = a_s_part.join('/');
+            if (!o_group__by_parent[s_parent]) {
+                o_group__by_parent[s_parent] = {
+                    s_path_absolute: s_parent,
+                    s_name: a_s_part.at(-1),
+                    b_folder: true,
+                    a_o_fsnode: [],
+                };
+                a_o_root__grouped.push(o_group__by_parent[s_parent]);
+            }
+            o_group__by_parent[s_parent].a_o_fsnode.push(o);
+        }
+    }
+    // sort children: folders first, then by name
+    let f_sort = function(a) {
+        a.sort(function(o_a, o_b) {
+            if (o_a.b_folder !== o_b.b_folder) return o_a.b_folder ? -1 : 1;
+            return o_a.s_name.localeCompare(o_b.s_name);
+        });
+        for (let o of a) {
+            if (o.a_o_fsnode.length > 0) f_sort(o.a_o_fsnode);
+        }
+    };
+    f_sort(a_o_root__grouped);
+    return a_o_root__grouped;
+};
+
+// delete a fsnode and all its descendants + associated images/videos/poses/keypoints from DB
+// crud delete only supports { n_id: X }, so we must read each record first and delete by n_id
+let f_delete_fsnode = function(n_id) {
+    let a_n_id__to_delete = [];
+    // collect this node and all descendants (depth-first)
+    let f_collect = function(n_id_current) {
+        let a_o_child = f_v_crud__indb('read', o_model__o_fsnode, { n_o_fsnode_n_id: n_id_current }) || [];
+        for (let o_child of a_o_child) {
+            f_collect(o_child.n_id);
+        }
+        // add after children so children are deleted first (respects FK constraints)
+        a_n_id__to_delete.push(n_id_current);
+    };
+    f_collect(n_id);
+    // delete associated data for each fsnode, then the fsnode itself
+    for (let n_id_fsnode of a_n_id__to_delete) {
+        // find images linked to this fsnode
+        let a_o_image = f_v_crud__indb('read', o_model__o_image, { n_o_fsnode_n_id: n_id_fsnode }) || [];
+        for (let o_image of a_o_image) {
+            // delete keypoints for each pose of this image
+            let a_o_pose = f_v_crud__indb('read', o_model__o_pose, { n_o_image_n_id: o_image.n_id }) || [];
+            for (let o_pose of a_o_pose) {
+                let a_o_kp = f_v_crud__indb('read', o_model__o_posekeypoint, { n_o_pose_n_id: o_pose.n_id }) || [];
+                for (let o_kp of a_o_kp) {
+                    f_v_crud__indb('delete', o_model__o_posekeypoint, { n_id: o_kp.n_id });
+                }
+                f_v_crud__indb('delete', o_model__o_pose, { n_id: o_pose.n_id });
+            }
+            f_v_crud__indb('delete', o_model__o_image, { n_id: o_image.n_id });
+        }
+        // delete videos linked to this fsnode
+        let a_o_video = f_v_crud__indb('read', o_model__o_video, { n_o_fsnode_n_id: n_id_fsnode }) || [];
+        for (let o_video of a_o_video) {
+            f_v_crud__indb('delete', o_model__o_video, { n_id: o_video.n_id });
+        }
+        // delete the fsnode itself
+        f_v_crud__indb('delete', o_model__o_fsnode, { n_id: n_id_fsnode });
+    }
+    return { n_deleted: a_n_id__to_delete.length };
+};
+
 export {
     f_a_o_fsnode__from_path_recursive,
     f_create_test_data,
     f_a_o_image__with_pose,
+    f_a_o_fsnode__from_db,
+    f_delete_fsnode,
 };

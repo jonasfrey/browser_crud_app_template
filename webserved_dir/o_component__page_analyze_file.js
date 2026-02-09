@@ -1,12 +1,28 @@
 import { o_state as o_state__ws, f_send, f_register_handler } from './o_service__websocket.js';
 import { o_component__file_tree } from './o_component__file_tree.js';
 
-let f_add_b_expanded = function(a_o_fsnode) {
+// collect n_id of all currently expanded folders into a Set
+let f_o_set__expanded = function(a_o_fsnode) {
+    let o_set = new Set();
     for (let o_fsnode of a_o_fsnode) {
-        if (o_fsnode.s_type === 'directory') {
-            o_fsnode.b_expanded = false;
+        if (o_fsnode.b_folder && o_fsnode.b_expanded) {
+            o_set.add(o_fsnode.n_id);
+        }
+        if (o_fsnode.a_o_fsnode) {
+            for (let n_id of f_o_set__expanded(o_fsnode.a_o_fsnode)) {
+                o_set.add(n_id);
+            }
+        }
+    }
+    return o_set;
+};
+
+let f_add_b_expanded = function(a_o_fsnode, o_set__expanded) {
+    for (let o_fsnode of a_o_fsnode) {
+        if (o_fsnode.b_folder) {
+            o_fsnode.b_expanded = o_set__expanded ? o_set__expanded.has(o_fsnode.n_id) : false;
             if (o_fsnode.a_o_fsnode) {
-                f_add_b_expanded(o_fsnode.a_o_fsnode);
+                f_add_b_expanded(o_fsnode.a_o_fsnode, o_set__expanded);
             }
         }
     }
@@ -38,8 +54,10 @@ let o_component__page_analyze_file = {
             <div class="controls">
                 <input type="text" class="input" placeholder="/path/to/directory"
                     v-model="s_path" @keydown.enter="f_scan_directory" />
-                <button class="btn" :disabled="!o_state__ws.b_connected"
-                    @click="f_scan_directory">f_a_o_fsnode</button>
+                <button class="btn" :disabled="!o_state__ws.b_connected || b_loading__tree"
+                    @click="f_scan_directory">
+                    {{ b_loading__tree ? 'scanning...' : 'Scan Directory' }}
+                </button>
                 <button class="btn" :disabled="!o_state__ws.b_connected || a_o_fsnode.length === 0 || b_loading__pose"
                     @click="f_run_pose_estimation">
                     {{ b_loading__pose ? 'estimating poses...' : 'Run Pose Estimation' }}
@@ -48,14 +66,27 @@ let o_component__page_analyze_file = {
             <div v-if="s_error__pose" class="message error">{{ s_error__pose }}</div>
             <div v-if="s_result__pose" class="message">{{ s_result__pose }}</div>
             <div v-if="b_loading__pose && s_progress__pose" class="progress">{{ s_progress__pose }}</div>
-            <div class="container__tree">
-                <div v-if="s_error__tree" class="message error">{{ s_error__tree }}</div>
-                <div v-else-if="b_loading__tree">
-                    <div>loading...</div>
-                    <div v-if="s_progress__tree" class="progress">{{ s_progress__tree }}</div>
+            <div v-if="s_error__tree" class="message error">{{ s_error__tree }}</div>
+            <div v-else-if="b_loading__tree" class="container__tree">
+                <div>loading...</div>
+                <div v-if="s_progress__tree" class="progress">{{ s_progress__tree }}</div>
+            </div>
+            <template v-else-if="a_o_fsnode.length > 0">
+                <div v-for="o_fsnode in a_o_fsnode" :key="o_fsnode.n_id" class="container__tree" style="margin-bottom: 10px;">
+                    <div class="container__tree_header">
+                        <span style="color: #8a8a8a; font-size: 12px;">{{ o_fsnode.s_path_absolute }}</span>
+                        <button class="btn__sm danger" @click="f_delete_fsnode(o_fsnode.n_id)">x</button>
+                    </div>
+                    <file-tree
+                        :a_o_fsnode="o_fsnode.b_folder && o_fsnode.a_o_fsnode ? o_fsnode.a_o_fsnode : [o_fsnode]"
+                        :n_depth="0"
+                        @delete="f_delete_fsnode"></file-tree>
                 </div>
-                <file-tree v-else-if="a_o_fsnode.length > 0"
-                    :a_o_fsnode="a_o_fsnode" :n_depth="0"></file-tree>
+            </template>
+            <div v-else class="container__tree">
+                <div class="message" style="color: #8a8a8a;">
+                    No files in database. Enter a directory path and click 'Scan Directory' to analyze files.
+                </div>
             </div>
         </div>
     `,
@@ -74,6 +105,9 @@ let o_component__page_analyze_file = {
         };
     },
     methods: {
+        f_load_from_db: function() {
+            f_send({ s_type: 'f_a_o_fsnode__from_db' });
+        },
         f_scan_directory: function() {
             let s_path = this.s_path.trim();
             if (s_path.length === 0) return;
@@ -90,6 +124,9 @@ let o_component__page_analyze_file = {
             this.s_result__pose = '';
             f_send({ s_type: 'f_a_o_pose_from_a_o_img', a_o_image: a_o_image });
         },
+        f_delete_fsnode: function(n_id) {
+            f_send({ s_type: 'f_delete_fsnode', n_id: n_id });
+        },
         f_handle_message: function(o_data) {
             if (o_data.s_type === 'progress') {
                 if (o_data.s_task === 'f_a_o_fsnode') {
@@ -99,6 +136,16 @@ let o_component__page_analyze_file = {
                     this.s_progress__pose = o_data.s_message;
                 }
                 return;
+            }
+            if (o_data.s_type === 'f_a_o_fsnode__from_db') {
+                if (o_data.s_error) {
+                    this.s_error__tree = o_data.s_error;
+                    return;
+                }
+                // preserve expanded state from current tree
+                let o_set__expanded = f_o_set__expanded(this.a_o_fsnode);
+                f_add_b_expanded(o_data.a_o_fsnode, o_set__expanded);
+                this.a_o_fsnode = o_data.a_o_fsnode;
             }
             if (o_data.s_type === 'f_a_o_fsnode') {
                 this.b_loading__tree = false;
@@ -111,6 +158,14 @@ let o_component__page_analyze_file = {
                 this.s_error__tree = '';
                 f_add_b_expanded(o_data.a_o_fsnode);
                 this.a_o_fsnode = o_data.a_o_fsnode;
+            }
+            if (o_data.s_type === 'f_delete_fsnode') {
+                if (o_data.s_error) {
+                    this.s_error__tree = o_data.s_error;
+                    return;
+                }
+                // reload tree from db after delete
+                this.f_load_from_db();
             }
             if (o_data.s_type === 'f_a_o_pose_from_a_o_img') {
                 this.b_loading__pose = false;
@@ -126,6 +181,7 @@ let o_component__page_analyze_file = {
     },
     created: function() {
         this.f_unregister = f_register_handler(this.f_handle_message);
+        this.f_load_from_db();
     },
     beforeUnmount: function() {
         if (this.f_unregister) this.f_unregister();

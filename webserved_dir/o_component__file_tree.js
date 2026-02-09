@@ -20,10 +20,11 @@ let f_s_duration = function(n_ms) {
 let o_component__file_tree = {
     name: 'file-tree',
     props: ['a_o_fsnode', 'n_depth'],
+    emits: ['delete'],
     template: `
         <div>
-            <div v-for="o_fsnode in a_o_fsnode" :key="o_fsnode.s_path_absolute">
-                <div :style="{ paddingLeft: n_depth * 20 + 'px' }">
+            <div v-for="o_fsnode in a_o_fsnode" :key="o_fsnode.s_path_absolute || o_fsnode.n_id">
+                <div :style="{ paddingLeft: n_depth * 20 + 'px' }" class="entry__row">
                     <div v-if="o_fsnode.b_folder" class="entry__directory"
                         @click="o_fsnode.b_expanded = !o_fsnode.b_expanded">
                         <span class="indicator">{{ o_fsnode.b_expanded ? 'v' : '>' }}</span>
@@ -42,10 +43,13 @@ let o_component__file_tree = {
                             {{ f_s_filesize(o_fsnode.n_bytes) }}
                         </span>
                     </div>
+                    <button v-if="o_fsnode.n_id" class="btn__sm danger entry__btn_delete"
+                        @click.stop="$emit('delete', o_fsnode.n_id)">x</button>
                 </div>
-                <file-tree v-if="o_fsnode.b_folder && o_fsnode.b_expanded"
+                <file-tree v-if="o_fsnode.b_folder && o_fsnode.b_expanded && o_fsnode.a_o_fsnode"
                     :a_o_fsnode="o_fsnode.a_o_fsnode"
-                    :n_depth="n_depth + 1">
+                    :n_depth="n_depth + 1"
+                    @delete="$emit('delete', $event)">
                 </file-tree>
             </div>
         </div>

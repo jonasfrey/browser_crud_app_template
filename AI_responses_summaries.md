@@ -21,3 +21,8 @@
 2026-02-08 - added user guidance: empty-data message pointing to Analyze Files, analyzed image count display, s_root_dir sent from server via init WS message and passed as 4th arg to filter/postprocessor callbacks
 2026-02-09 - renamed a_o_image_data to a_o_image in server and client, added range selector for large image sets (pagination in chunks of 100, filters apply only to selected range)
 2026-02-09 - split pose estimation into batches of 50 images to avoid OS ARG_MAX command line limit, progress reports include batch label
+2026-02-09 - analyze files page loads fsnode tree from DB on mount, fsnodes deletable (cascade deletes children+images+videos+poses+keypoints), multiple root branches supported, fixed missing o_model__o_video import
+2026-02-09 - fixed FK constraint error on folder delete (crud delete only supports n_id, now reads each child record and deletes by n_id; children deleted before parents), added hover highlight on file tree rows
+2026-02-09 - preserve folder expanded state across tree reloads after delete (collect expanded n_id set before reload, restore on new data)
+2026-02-09 - separate root-level fsnodes displayed as individual boxes with path header and own delete button, each browsable independently
+2026-02-09 - fixed file tree box bug: scan now creates root folder fsnode for scanned directory (children nested under it instead of all being root nodes), f_a_o_fsnode__from_db groups orphan non-folder root nodes by parent directory for backward compatibility

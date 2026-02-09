@@ -151,3 +151,33 @@ then if the a_o_image array is like thousands of images, it takes to much time t
 
  ### cdn to downloaded files 
  we currently use cdn's (vue.js for example). these libraries should be hostet on the denojs webserver itself, internet/cdn dependency is not accepted
+
+ ### analyze files
+ the analyze files page should be mainly there for handling what files we want to analyze. the a_o_fsnode should be listet here after loading the app. if a fsnode is a folder it should be expandable . each fsnode should be deletable from the database. there could be multiple separate file tree branches (if we scan different harddisks ) each of them should be displayed. 
+
+
+ ### file tree gui
+ it's not clearly visible over what fsnode i am hovering. when i try to delete a fsnode that is a folder i get FOREIGN KEY constraint failed
+
+ ### file tree gui 2 
+ when a fsnode that was inside a opened folder is deleted, the folder closes which causes visual confusion 
+
+ ### file tree gui 3
+ separate trees should be displayed as separate trees, for example when we have many fsnode childs with and from the paths 
+ /path/to/folder1, and /tmp/to/other
+those should be displayed as separate boxes that are file trees that can be browsed by clicking and closing sub folders
+
+
+### file tree gui 4
+now we get for each file in a folder a separate box which is not what we want. 
+box_start
+/home/mintuser/code/media_analyser/.gitignored/COCO/set2/2364188930_6e04dbccc4_z.jpg
+x
+ 2364188930_6e04dbccc4_z.jpg
+x
+box_end
+box_start
+/home/mintuser/code/media_analyser/.gitignored/COCO/set2/287689148_48fd3a53bf_z.jpg
+x
+ 287689148_48fd3a53bf_z.jpg
+box_end

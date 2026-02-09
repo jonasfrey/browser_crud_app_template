@@ -12,6 +12,8 @@ import {
     f_a_o_fsnode__from_path_recursive,
     f_create_test_data,
     f_a_o_image__with_pose,
+    f_a_o_fsnode__from_db,
+    f_delete_fsnode,
 } from "./functions.module.js";
 import {
     f_a_o_pose_from_a_o_img,
@@ -143,6 +145,34 @@ let f_handler = async function(o_request) {
                 } catch (o_error) {
                     o_socket.send(JSON.stringify({
                         s_type: 'f_a_o_pose_from_a_o_img',
+                        s_error: o_error.message,
+                    }));
+                }
+            }
+            if(o_data.s_type === 'f_a_o_fsnode__from_db'){
+                try {
+                    let a_o_fsnode = f_a_o_fsnode__from_db();
+                    o_socket.send(JSON.stringify({
+                        s_type: 'f_a_o_fsnode__from_db',
+                        a_o_fsnode,
+                    }));
+                } catch (o_error) {
+                    o_socket.send(JSON.stringify({
+                        s_type: 'f_a_o_fsnode__from_db',
+                        s_error: o_error.message,
+                    }));
+                }
+            }
+            if(o_data.s_type === 'f_delete_fsnode'){
+                try {
+                    let o_result = f_delete_fsnode(o_data.n_id);
+                    o_socket.send(JSON.stringify({
+                        s_type: 'f_delete_fsnode',
+                        o_result,
+                    }));
+                } catch (o_error) {
+                    o_socket.send(JSON.stringify({
+                        s_type: 'f_delete_fsnode',
                         s_error: o_error.message,
                     }));
                 }
