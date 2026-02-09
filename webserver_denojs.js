@@ -149,10 +149,10 @@ let f_handler = async function(o_request) {
             }
             if(o_data.s_type === 'f_a_o_image__with_pose'){
                 try {
-                    let a_o_image_data = f_a_o_image__with_pose();
+                    let a_o_image = f_a_o_image__with_pose();
                     o_socket.send(JSON.stringify({
                         s_type: 'f_a_o_image__with_pose',
-                        a_o_image_data,
+                        a_o_image,
                     }));
                 } catch (o_error) {
                     o_socket.send(JSON.stringify({

@@ -88,10 +88,10 @@ let o_component__page_image_viewer = {
                     @click="f_load_data">
                     {{ b_loading ? 'loading...' : 'Load Images with Poses' }}
                 </button>
-                <span v-if="a_o_image_data__filtered.length > 0" style="color: #8a8a8a; align-self: center;">
-                    {{ n_idx__current + 1 }} / {{ a_o_image_data__filtered.length }}
-                    <span v-if="a_o_image_data__filtered.length !== a_o_image_data.length">
-                        ({{ a_o_image_data.length }} total)
+                <span v-if="a_o_image__filtered.length > 0" style="color: #8a8a8a; align-self: center;">
+                    {{ n_idx__current + 1 }} / {{ a_o_image__filtered.length }}
+                    <span v-if="a_o_image__filtered.length !== a_o_image.length">
+                        ({{ a_o_image.length }} total)
                     </span>
                     &nbsp; (k: prev / l: next)
                 </span>
@@ -106,13 +106,23 @@ let o_component__page_image_viewer = {
                     @click="b_show__image_area = !b_show__image_area">image areas</button>
             </div>
             <div v-if="s_error" class="message error">{{ s_error }}</div>
-            <div v-if="b_loaded_once && a_o_image_data.length === 0" class="message" style="margin-bottom: 12px;">
+            <div v-if="b_loaded_once && a_o_image.length === 0" class="message" style="margin-bottom: 12px;">
                 No analyzed images found. Go to 'Analyze Files' to scan a directory and run pose estimation first.
             </div>
-            <div v-if="b_loaded_once && a_o_image_data.length > 0" style="color: #8a8a8a; font-size: 12px; margin-bottom: 8px;">
-                {{ a_o_image_data.length }} analyzed image(s) in database
+            <div v-if="b_loaded_once && a_o_image.length > 0" style="color: #8a8a8a; font-size: 12px; margin-bottom: 8px;">
+                {{ a_o_image.length }} analyzed image(s) in database
             </div>
-            <div v-if="a_o_image_data__filtered.length > 0" class="image_viewer__container">
+            <div v-if="a_o_image.length > n_sz__range" class="image_viewer__range_selector">
+                <span style="color: #8a8a8a; font-size: 12px; margin-right: 8px;">Range:</span>
+                <button v-for="n_idx in n_cnt__range" :key="n_idx"
+                    class="btn__sm"
+                    :class="(n_idx - 1) === n_idx__range ? 'image_filter__btn_active' : 'image_filter__btn_inactive'"
+                    @click="n_idx__range = n_idx - 1; n_idx__current = 0;"
+                    style="margin-right: 4px;">
+                    {{ (n_idx - 1) * n_sz__range }}-{{ Math.min(n_idx * n_sz__range, a_o_image.length) - 1 }}
+                </button>
+            </div>
+            <div v-if="a_o_image__filtered.length > 0" class="image_viewer__container">
                 <div class="image_viewer__image_wrap" ref="el_image_wrap">
                     <img ref="el_img"
                         :src="s_src__image"
@@ -145,7 +155,9 @@ let o_component__page_image_viewer = {
     data: function() {
         return {
             o_state__ws: o_state__ws,
-            a_o_image_data: [],
+            a_o_image: [],
+            n_sz__range: 100,
+            n_idx__range: 0,
             n_idx__current: 0,
             b_loading: false,
             b_loaded_once: false,
@@ -166,24 +178,32 @@ let o_component__page_image_viewer = {
         a_o_image_postprocessor__postprocessor: function() {
             return this.a_o_image_postprocessor.filter(function(o){ return !o.b_filter; });
         },
-        a_o_image_data__filtered: function() {
+        n_cnt__range: function() {
+            return Math.ceil(this.a_o_image.length / this.n_sz__range) || 1;
+        },
+        a_o_image__ranged: function() {
+            let n_idx__start = this.n_idx__range * this.n_sz__range;
+            let n_idx__end = n_idx__start + this.n_sz__range;
+            return this.a_o_image.slice(n_idx__start, n_idx__end);
+        },
+        a_o_image__filtered: function() {
             let a_f_b_show = this.a_o_image_postprocessor.filter(function(o){
                 return o.b_active && o.b_filter;
             }).map(function(o){
                 return new Function('return ' + o.s_f_b_show)();
             });
             let s_root_dir = globalThis.s_root_dir || '';
-            let a_o_image_data__filtered = this.a_o_image_data.filter(function(o_image){
+            let a_o_image__filtered = this.a_o_image__ranged.filter(function(o_image){
                 for(let f_b_show of a_f_b_show){
                     let b = f_b_show(o_image.o_image, o_image.o_fsnode, o_image.a_o_pose, s_root_dir);
                     if(!b) return false;
                 }
                 return true;
             });
-            return a_o_image_data__filtered;
+            return a_o_image__filtered;
         },
         o_data__current: function() {
-            return this.a_o_image_data__filtered[this.n_idx__current] || null;
+            return this.a_o_image__filtered[this.n_idx__current] || null;
         },
         s_src__image: function() {
             if (!this.o_data__current) return '';
@@ -203,7 +223,8 @@ let o_component__page_image_viewer = {
                     this.s_error = o_data.s_error;
                     return;
                 }
-                this.a_o_image_data = o_data.a_o_image_data || [];
+                this.a_o_image = o_data.a_o_image || [];
+                this.n_idx__range = 0;
                 this.n_idx__current = 0;
                 this.b_loaded_once = true;
             }
@@ -225,10 +246,10 @@ let o_component__page_image_viewer = {
             this.f_draw_overlay();
         },
         f_navigate: function(n_direction) {
-            if (this.a_o_image_data__filtered.length === 0) return;
+            if (this.a_o_image__filtered.length === 0) return;
             let n_next = this.n_idx__current + n_direction;
-            if (n_next < 0) n_next = this.a_o_image_data__filtered.length - 1;
-            if (n_next >= this.a_o_image_data__filtered.length) n_next = 0;
+            if (n_next < 0) n_next = this.a_o_image__filtered.length - 1;
+            if (n_next >= this.a_o_image__filtered.length) n_next = 0;
             this.n_idx__current = n_next;
         },
         f_draw_overlay: function() {
@@ -433,7 +454,7 @@ let o_component__page_image_viewer = {
         f_execute_postprocessor: async function(o_pp) {
             this.b_executing = true;
             this.s_result__postprocessor = '';
-            let a_o = this.a_o_image_data__filtered;
+            let a_o = this.a_o_image__filtered;
             let n_len = a_o.length;
             let n_done = 0;
             let n_error = 0;

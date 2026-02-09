@@ -256,6 +256,14 @@ nav {
     margin-left: 12px;
 }
 
+.image_viewer__range_selector {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
 /* image filter panel */
 .image_filter__panel {
     margin-bottom: 16px;

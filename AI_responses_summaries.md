@@ -19,3 +19,4 @@
 2026-02-08 - fixed pose estimation deadlock: read stdout concurrently with stderr via Promise.all to prevent pipe buffer blocking
 2026-02-08 - renamed Pose Viewer to Image Viewer, split filters/postprocessors by b_filter flag, added canvas toggle buttons for pose lines/keypoint labels/image areas, added execute button for postprocessors, removed a_s_filter_extension from config
 2026-02-08 - added user guidance: empty-data message pointing to Analyze Files, analyzed image count display, s_root_dir sent from server via init WS message and passed as 4th arg to filter/postprocessor callbacks
+2026-02-09 - renamed a_o_image_data to a_o_image in server and client, added range selector for large image sets (pagination in chunks of 100, filters apply only to selected range)

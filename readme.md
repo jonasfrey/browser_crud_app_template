@@ -138,3 +138,9 @@ next to each such postprocessor there should be a button to manually execute the
 the user could go to the image viewer page and load images with poses even if there is no data. if there is no data a message should be shown that first files have to be 'analyzed'
 on the image viewer there should be the number of analyzed files
 's_root_dir' should be available on client side and should be passed to the callback functions on the client side   
+
+
+### image viewer 
+in the image viewer the property 'a_o_image__data' can be renamed to simply 'a_o_image'
+then if the a_o_image array is like thousands of images, it takes to much time to filter them all, so there should be a selector where a user can select ranges , like 0-100, 101-200, 201-300... 
+ 

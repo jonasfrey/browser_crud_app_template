@@ -82,8 +82,8 @@ let f_unzip_with_progress = async function(s_path_zip) {
         console.error(`Error unzipping ${s_path_zip}:`, o_error.message);
     }
 
-    let n_files_to_keep = 100;
-    // only keep the first 1000 images in val2017 to save disk space
+    let n_files_to_keep = 500;
+    // only keep the first 500 images in val2017 to save disk space
     let s_path_val2017 = `${s_root_dir}${s_ds}.gitignored${s_ds}COCO${s_ds}val2017`;
     try {
         let n_count = 0;
