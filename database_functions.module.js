@@ -4,96 +4,17 @@ import {
     a_o_model,
     f_s_name_table__from_o_model,
     f_s_name_foreign_key__from_o_model,
-    o_model__o_config,
     f_o_model_instance,
-    o_model__o_image_postprocessor,
+    s_name_prop_id,
+    f_a_s_error__invalid_model_instance,
 } from "./webserved_dir/constructors.module.js";
 import { s_ds, s_root_dir } from "./runtimedata.module.js";
+import { f_ensure_default_data } from "./default_data.module.js";
 
 let o_db = null;
 
-let s_path_database = './.gitignored/media_analyser.db';
+let s_path_database = './.gitignored/app.db';
 
-let o_config__default = f_o_model_instance(o_model__o_config, {
-    n_id: 1,
-    s_path_last_opened: `${s_root_dir}/.gitignored/COCO`,
-});
-let o_image_postprocessor__default = f_o_model_instance(o_model__o_image_postprocessor, {
-    n_id: 1,
-    s_name: 'filter_single_person_in_image',
-    s_f_b_show: (
-    (o_image, o_fsnode, a_o_pose)=>{
-        return a_o_pose.length == 1;
-    }
-    ).toString(), 
-    b_filter : true, 
-    b_active : false, 
-});
-let o_image_postprocessor__default2 = f_o_model_instance(o_model__o_image_postprocessor, {
-    n_id: 2,
-    s_name: 'filter_person_with_hands_in_the_air',
-    s_f_b_show: (
-    (o_image, o_fsnode, a_o_pose)=>{
-        // we can filter poses here
-        let op1 = a_o_pose?.[0];
-        let a_s_name_keypoint = [
-            'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
-            'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-            'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
-            'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
-        ];
-
-        for(let s of a_s_name_keypoint){
-            let o_keypoint = op1?.a_o_posekeypoint?.find(function(o){return o?.s_name === s});
-            if(o_keypoint){op1['o_' + s] = o_keypoint}
-        };
-
-        if(
-            op1?.o_left_wrist?.n_trn_y < op1?.o_left_shoulder?.n_trn_y
-            &&
-            op1?.o_right_wrist?.n_trn_y < op1?.o_right_shoulder?.n_trn_y
-        ){
-            return true
-        }
-        return false;
-    }
-    ).toString(), 
-    b_filter : true, 
-    b_active : false, 
-});
-let o_image_postprocessor__copy_filtered_files = f_o_model_instance(o_model__o_image_postprocessor, {
-    n_id: 3,
-    s_name: 'postprocessor_copy_filtered_files',
-    s_f_b_show: (
-    async (o_image, o_fsnode, a_o_pose)=>{
-        let s_path_dir = `${s_root_dir}/.gitignored/filtered_images/`;
-        let s_path_to_copy_to = `${s_path_dir}/${o_fsnode.s_name}`;
-        await fetch('/api/deno_mkdir', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ a_s_argument: [s_path_dir] })
-        });
-        try {
-            
-            let o_resp = await fetch('/api/deno_stat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ a_s_argument: [s_path_to_copy_to] })
-            }).then(res => res.json());
-            console.log(o_resp)
-            
-        } catch (error) {
-            await fetch('/api/deno_copy_file', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ a_s_argument: [o_fsnode.s_path_absolute, s_path_to_copy_to] })
-            });
-        }
-    }
-    ).toString(), 
-    b_filter : false, 
-    b_active : false, 
-});
 
 let f_init_db = async function(s_path_db = s_path_database) {
     //make sure the folder where db should be stored exists
@@ -116,7 +37,7 @@ let f_init_db = async function(s_path_db = s_path_database) {
             if (o_prop.s_type === 'number') s_sql_type = 'REAL';
             if (o_prop.s_type === 'boolean') s_sql_type = 'INTEGER';
 
-            a_s_column.push(o_prop.s_name + ' ' + s_sql_type);
+            a_s_column.push(`${o_prop.s_name} ${s_sql_type}`);
 
             // detect foreign key
             let o_model__foreign = a_o_model.find(function(o) {
@@ -124,63 +45,19 @@ let f_init_db = async function(s_path_db = s_path_database) {
             });
             if (o_model__foreign) {
                 let s_name_table_ref = f_s_name_table__from_o_model(o_model__foreign);
-                a_s_fk.push('FOREIGN KEY (' + o_prop.s_name + ') REFERENCES ' + s_name_table_ref + '(n_id)');
+                a_s_fk.push(`FOREIGN KEY (${o_prop.s_name}) REFERENCES ${s_name_table_ref}(n_id)`);
             }
         }
 
-        let s_sql = 'CREATE TABLE IF NOT EXISTS ' + s_name_table
-            + ' (\n' + a_s_column.concat(a_s_fk).join(',\n') + '\n)';
+        let s_sql = `CREATE TABLE IF NOT EXISTS ${s_name_table} (\n${a_s_column.concat(a_s_fk).join(',\n')}\n)`;
         o_db.exec(s_sql);
     }
 
-    // ensure a default config row exists
-    let o_config__default_fromdb = (await f_v_crud__indb(
-        'read', 
-        o_model__o_config,
-         { n_id: o_config__default.n_id })
-    )?.at(0);
-
-    if(!o_config__default_fromdb){
-        await f_v_crud__indb(
-            'create', 
-            o_model__o_config, 
-            o_config__default
-    );
-    }
-    for(let o_image_postprocessor of [
-        o_image_postprocessor__default,
-        o_image_postprocessor__default2,
-        o_image_postprocessor__copy_filtered_files
-    ]){
-        let o_image_postprocessor__fromdb = (await f_v_crud__indb(
-            'read', 
-            o_model__o_image_postprocessor,
-             { n_id: o_image_postprocessor.n_id })
-        )?.at(0);
-            
-        if(!o_image_postprocessor__fromdb){
-            await f_v_crud__indb(
-                'create', 
-                o_model__o_image_postprocessor, 
-                o_image_postprocessor
-        );
-        }
-    }
-
-
-    console.log(o_config__default_fromdb);
+    f_ensure_default_data();
     return o_db;
 };
 
 
-
-// helper: serialize array-type values to JSON strings for storage
-let f_v_value__serialized = function(o_prop, v_val) {
-    if (o_prop.s_type === 'array' && v_val !== null && v_val !== undefined && typeof v_val !== 'string') {
-        return JSON.stringify(v_val);
-    }
-    return v_val;
-};
 
 // generic db CRUD
 
@@ -195,26 +72,24 @@ let f_v_crud__indb = function(
 ){
     let s_name_table = f_s_name_table__from_o_model(o_model);
     let v_return = null;
+    
+    let a_s_error = f_a_s_error__invalid_model_instance(o_model, v_o_data);
+    if(a_s_error.length > 0){
+        throw new Error('Invalid model instance: ' + a_s_error.join('; '));
+    }
+
+    // validate values
+    let o_model_instance = f_o_model_instance(o_model, v_o_data);
+    let a_s_name_property = Object.keys(o_model_instance);
+    let a_v_value = Object.values(o_model_instance);
 
     if (s_name_crud_function === 'create') {
         // v_o_data should be an instance of o_model
-        let a_s_column = [];
-        let a_v_value = [];
-
-        for (let o_prop of o_model.a_o_property) {
-            if (o_prop.s_name === 'n_id' && (v_o_data.n_id === undefined || v_o_data.n_id === null || v_o_data.n_id === '')) continue;
-            if (v_o_data[o_prop.s_name] === undefined) continue;
-            a_s_column.push(o_prop.s_name);
-            a_v_value.push(f_v_value__serialized(o_prop, v_o_data[o_prop.s_name]));
-        }
-
-        let s_sql = 'INSERT INTO ' + s_name_table
-            + ' (' + a_s_column.join(', ') + ') VALUES ('
-            + a_s_column.map(function() { return '?'; }).join(', ') + ')';
+        let s_sql = `INSERT INTO ${s_name_table} (${a_s_name_property.join(', ')}) VALUES (${a_s_name_property.map(function() { return '?'; }).join(', ')})`;
         o_db.prepare(s_sql).run(...a_v_value);
 
         let o_last = o_db.prepare('SELECT last_insert_rowid() as n_id').get();
-        v_return = o_db.prepare('SELECT * FROM ' + s_name_table + ' WHERE n_id = ?').get(o_last.n_id)
+        v_return = o_db.prepare(`SELECT * FROM ${s_name_table} WHERE n_id = ?`).get(o_last.n_id)
     }
 
     if (s_name_crud_function === 'read') {
@@ -223,10 +98,10 @@ let f_v_crud__indb = function(
         if (v_o_data) {
             let a_s_filter = [];
             for (let s_key in v_o_data) {
-                a_s_filter.push(s_key + ' = ?');
+                a_s_filter.push(`${s_key} = ?`);
             }
             if (a_s_filter.length > 0) {
-                s_query += ' WHERE ' + a_s_filter.join(' AND ');
+                s_query += ` WHERE ${a_s_filter.join(' AND ')}`;
             }
         }
         // console.log(s_query);
@@ -240,31 +115,27 @@ let f_v_crud__indb = function(
     if (s_name_crud_function === 'update') {
         // v_o_data should be an instance of o_model, with n_id property set to the id of the row to update
         // v_o_data_update should be an object with the properties to update
-        if (!v_o_data || v_o_data.n_id === undefined || v_o_data.n_id === null) return null;
-
-        let a_s_set = [];
-        let a_v_value = [];
-
-        for (let o_prop of o_model.a_o_property) {
-            if (o_prop.s_name === 'n_id') continue;
-            if (v_o_data_update[o_prop.s_name] === undefined) continue;
-            a_s_set.push(o_prop.s_name + ' = ?');
-            a_v_value.push(f_v_value__serialized(o_prop, v_o_data_update[o_prop.s_name]));
+        if(!a_s_name_property.includes(s_name_prop_id)){
+            throw new Error(`id property (${s_name_prop_id}) is required for update`);
+        }
+        let a_s_error = f_a_s_error__invalid_model_instance(o_model, v_o_data_update);
+        if(a_s_error.length > 0){
+            throw new Error('Invalid model instance: ' + a_s_error.join('; '));
         }
 
-        if (a_s_set.length === 0) return null;
-
-        a_v_value.push(v_o_data.n_id);
-        let s_sql = 'UPDATE ' + s_name_table + ' SET ' + a_s_set.join(', ') + ' WHERE n_id = ?';
+        let s_sql = `UPDATE ${s_name_table} SET ${a_s_set.join(', ')} WHERE ${s_name_prop_id} = ?`;
         o_db.prepare(s_sql).run(...a_v_value);
 
-        v_return = o_db.prepare('SELECT * FROM ' + s_name_table + ' WHERE n_id = ?').get(v_o_data.n_id)
+        v_return = o_db.prepare(`SELECT * FROM ${s_name_table} WHERE n_id = ?`).get(v_o_data.n_id)
     }
 
     if (s_name_crud_function === 'delete') {
+        if(!a_s_name_property.includes(s_name_prop_id)){
+            throw new Error(`id property (${s_name_prop_id}) is required for delete`);
+        }
         // v_o_data should be an instance of o_model, with n_id property set to the id of the row to delete
         if (!v_o_data || v_o_data.n_id === undefined || v_o_data.n_id === null) return false;
-        o_db.prepare('DELETE FROM ' + s_name_table + ' WHERE n_id = ?').run(v_o_data.n_id);
+        o_db.prepare(`DELETE FROM ${s_name_table} WHERE n_id = ?`).run(v_o_data.n_id);
         v_return = true;
     }
 
@@ -275,5 +146,5 @@ let f_v_crud__indb = function(
 export {
     f_init_db,
     f_v_crud__indb,
-    f_db_delete_table_data
+    f_db_delete_table_data,
 };

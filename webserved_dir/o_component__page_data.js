@@ -1,12 +1,9 @@
 import { o_state as o_state__ws, f_send, f_register_handler } from './o_service__websocket.js';
 import {
     a_o_model,
-    o_model__o_config,
     f_s_name_table__from_o_model,
     f_o_model__from_s_name_table,
 } from './constructors.module.js';
-
-let s_name_table__config = f_s_name_table__from_o_model(o_model__o_config);
 
 let o_component__page_data = {
     name: 'page-data',

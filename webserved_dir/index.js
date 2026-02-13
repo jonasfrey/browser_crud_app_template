@@ -14,12 +14,10 @@ for (let o_model of a_o_model) {
 f_register_handler(function(o_data) {
     if (o_data.s_type === 'init') {
         globalThis.s_root_dir = o_data.s_root_dir || '';
+        o_state__dbdata.b_loaded = true;
     }
     if (o_data.s_type === 'crud' && o_data.s_name_table in o_state__dbdata) {
         o_state__dbdata[o_data.s_name_table] = o_data.v_result || [];
-        if (o_data.s_name_table === 'a_o_config') {
-            o_state__dbdata.b_loaded = true;
-        }
     }
 });
 
@@ -31,10 +29,7 @@ let o_app = createApp({
             o_state__ws: o_state__ws,
             o_state__dbdata: o_state__dbdata,
             a_o_page: [
-                { s_key: 'analyze_file', s_label: 'Analyze Files' },
                 { s_key: 'data', s_label: 'Data' },
-                { s_key: 'configuration', s_label: 'Configuration' },
-                { s_key: 'image_viewer', s_label: 'Image Viewer' },
             ],
 
         };

@@ -6,19 +6,7 @@ import {
 } from "./database_functions.module.js";
 import {
     f_o_model__from_s_name_table,
-    o_model__o_config,
 } from "./webserved_dir/constructors.module.js";
-import {
-    f_a_o_fsnode__from_path_recursive,
-    f_create_test_data,
-    f_a_o_image__with_pose,
-    f_a_o_fsnode__from_db,
-    f_delete_fsnode,
-} from "./functions.module.js";
-import {
-    f_a_o_pose_from_a_o_img,
-    f_download_vitpose_model,
-} from "./command_api.module.js";
 import {
     s_ds,
     s_root_dir,
@@ -36,30 +24,14 @@ let f_s_content_type = function(s_path) {
     return 'application/octet-stream';
 };
 
-await f_create_test_data();
-await f_download_vitpose_model();
-
 let f_handler = async function(o_request) {
     // websocket upgrade
-    
+
     if (o_request.headers.get('upgrade') === 'websocket') {
         let { socket: o_socket, response: o_response } = Deno.upgradeWebSocket(o_request);
 
         o_socket.onopen = function() {
             console.log('websocket connected');
-
-            // read data and send to client 
-            let a_o_config = f_v_crud__indb(
-                'read',
-                o_model__o_config,
-                {}
-            );
-            console.log(a_o_config)
-            o_socket.send(JSON.stringify({
-                s_type: 'crud',
-                s_name_table: 'a_o_config',
-                v_result: a_o_config
-            }));
             o_socket.send(JSON.stringify({
                 s_type: 'init',
                 s_root_dir: s_root_dir,
@@ -68,37 +40,6 @@ let f_handler = async function(o_request) {
 
         o_socket.onmessage = async function(o_evt) {
             let o_data = JSON.parse(o_evt.data);
-
-            if (o_data.s_type === 'f_a_o_fsnode') {
-                try {
-                    let o_stat = await Deno.stat(o_data.s_path);
-                    if (!o_stat.isDirectory) {
-                        o_socket.send(JSON.stringify({
-                            s_type: 'f_a_o_fsnode',
-                            s_error: 'path is not a directory',
-                        }));
-                        return;
-                    }
-                    let f_on_progress = function(s_message){
-                        o_socket.send(JSON.stringify({
-                            s_type: 'progress',
-                            s_task: 'f_a_o_fsnode',
-                            s_message,
-                        }));
-                    };
-                    let a_o_fsnode = await f_a_o_fsnode__from_path_recursive(o_data.s_path, null, f_on_progress);
-
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_fsnode',
-                        a_o_fsnode,
-                    }));
-                } catch (o_error) {
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_fsnode',
-                        s_error: o_error.message,
-                    }));
-                }
-            }
 
             if (o_data.s_type === 'crud') {
                 try {
@@ -124,69 +65,6 @@ let f_handler = async function(o_request) {
                         s_type: 'crud',
                         s_name_crud: o_data.s_name_crud,
                         s_name_table: o_data.s_name_table,
-                        s_error: o_error.message,
-                    }));
-                }
-            }
-            if(o_data.s_type === 'f_a_o_pose_from_a_o_img'){
-                try {
-                    let f_on_progress = function(s_message){
-                        o_socket.send(JSON.stringify({
-                            s_type: 'progress',
-                            s_task: 'f_a_o_pose_from_a_o_img',
-                            s_message,
-                        }));
-                    };
-                    let a_o_pose = await f_a_o_pose_from_a_o_img(o_data.a_o_image, f_on_progress);
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_pose_from_a_o_img',
-                        a_o_pose,
-                    }));
-                } catch (o_error) {
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_pose_from_a_o_img',
-                        s_error: o_error.message,
-                    }));
-                }
-            }
-            if(o_data.s_type === 'f_a_o_fsnode__from_db'){
-                try {
-                    let a_o_fsnode = f_a_o_fsnode__from_db();
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_fsnode__from_db',
-                        a_o_fsnode,
-                    }));
-                } catch (o_error) {
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_fsnode__from_db',
-                        s_error: o_error.message,
-                    }));
-                }
-            }
-            if(o_data.s_type === 'f_delete_fsnode'){
-                try {
-                    let o_result = f_delete_fsnode(o_data.n_id);
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_delete_fsnode',
-                        o_result,
-                    }));
-                } catch (o_error) {
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_delete_fsnode',
-                        s_error: o_error.message,
-                    }));
-                }
-            }
-            if(o_data.s_type === 'f_a_o_image__with_pose'){
-                try {
-                    let a_o_image = f_a_o_image__with_pose();
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_image__with_pose',
-                        a_o_image,
-                    }));
-                } catch (o_error) {
-                    o_socket.send(JSON.stringify({
-                        s_type: 'f_a_o_image__with_pose',
                         s_error: o_error.message,
                     }));
                 }
@@ -230,9 +108,9 @@ let f_handler = async function(o_request) {
         {
             s_name :"deno_stat",
             f_function: async function(s_path){
-                return await Deno.stat(s_path);   
+                return await Deno.stat(s_path);
             }
-        }, 
+        },
         {
             s_name : "deno_mkdir",
             f_function: async function(s_path){
