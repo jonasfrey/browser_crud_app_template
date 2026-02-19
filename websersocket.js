@@ -42,7 +42,6 @@ if (!s_uuid) {
     };
 
     await f_s_append_uuid_to_env(`${s_root_dir}${s_ds}.env`);
-    await f_s_append_uuid_to_env(`${s_root_dir}${s_ds}.env.example`);
 
     let o_deno_json = JSON.parse(await Deno.readTextFile(`${s_root_dir}${s_ds}deno.json`));
     o_deno_json.tasks = {
