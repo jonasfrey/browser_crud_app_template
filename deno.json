@@ -1,6 +1,6 @@
 {
     "tasks": {
-        "run": "B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_ed3f63b6-5b38-4dd6-8610-468bca56d386.js",
+        "run": "B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket.js",
         "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js"
     }
 }
