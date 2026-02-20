@@ -3,8 +3,14 @@
   "version": "0.1.0",
   "license": "MIT",
   "exports": "./exports.js",
-      "tasks": {
-        "run": "B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_550ad2f2-336e-458f-8311-e8082319b641.js",
-        "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js"
-    }
+  "publish": {
+    "exclude": [
+      "AI_responses_summaries.md",
+      "planning/"
+    ]
+  },
+  "tasks": {
+    "run": "B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_550ad2f2-336e-458f-8311-e8082319b641.js",
+    "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js"
+  }
 }

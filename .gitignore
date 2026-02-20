@@ -4,3 +4,7 @@
 
 # python venv
 venv/
+
+# ai / planning
+AI_responses_summaries.md
+planning/
