@@ -4,17 +4,22 @@ import {
     f_init_db,
     f_v_crud__indb,
 } from "./database_functions.js";
-import { f_a_o_fsnode__from_path } from "./functions.js";
+import { f_a_o_fsnode, f_v_result_from_o_wsmsg } from "./functions.js";
 import {
     a_o_model,
     f_o_model__from_s_name_table,
     f_o_model_instance,
     o_model__o_course,
     o_model__o_wsclient,
-    a_o_sfunexposed,
+    a_o_wsmsg,
     f_s_name_table__from_o_model,
     f_o_wsmsg,
-    f_o_toast,
+    f_o_logmsg,
+    o_wsmsg__logmsg,
+    o_wsmsg__set_state_data,
+    s_o_logmsg_s_type__log,
+    s_o_logmsg_s_type__info,
+    s_o_logmsg_s_type__error,
 } from "./localhost/constructors.js";
 import {
     s_ds,
@@ -27,6 +32,8 @@ if (b_initialized && !Deno.env.get('B_DENO_TASK')) {
     console.error('run with `deno task run` to start the server');
     Deno.exit(1);
 }
+let s_uuid_websersocket = crypto.randomUUID();
+let o_state = {}
 
 // first-run: generate S_UUID, persist it, update deno.json, rename this file
 let s_uuid = Deno.env.get('S_UUID');
@@ -107,25 +114,37 @@ let f_handler = async function(o_request, o_conninfo) {
         }
         o_socket.onopen = async function() {
             console.log('websocket connected');
-            o_socket.send(JSON.stringify({
-                s_type: 'init',
-                s_root_dir: s_root_dir,
-                s_ds: s_ds,
-            }));
+            o_socket.send(JSON.stringify(
+                f_o_wsmsg(
+                    o_wsmsg__set_state_data.s_name,
+                    {
+                        s_property: 's_root_dir',
+                        value: s_root_dir
+                    }
+                )
+            ));
+            o_socket.send(JSON.stringify(
+                f_o_wsmsg(
+                    o_wsmsg__set_state_data.s_name,
+                    {
+                        s_property: 's_ds',
+                        value: s_ds
+                    }
+                )
+            ));
 
-
-            // send all data 
             for(let o_model of a_o_model){
 
-                o_socket.send(JSON.stringify({
-                    o_model: o_model,
-                    v_data: (await f_v_crud__indb(
-                            'read',
-                            f_s_name_table__from_o_model(o_model)
-                        )
+                o_socket.send(JSON.stringify(
+                    f_o_wsmsg(
+                        o_wsmsg__set_state_data.s_name,
+                        {
+                            s_property: f_s_name_table__from_o_model(o_model),
+                            value: f_v_crud__indb('read', f_s_name_table__from_o_model(o_model)) || []
+                        }
                     )
-                }));
-                
+                ));
+
             }
 
             // annoyning interval to test toast
@@ -207,10 +226,12 @@ let f_handler = async function(o_request, o_conninfo) {
                     ];
                 o_socket.send(JSON.stringify(
                     f_o_wsmsg(
-                        'toast',
-                        f_o_toast(
+                        o_wsmsg__logmsg.s_name,
+                        f_o_logmsg(
                             a_s_msg_annoying[Math.floor(Math.random() * a_s_msg_annoying.length)],
-                            'info',
+                            true,
+                            true,
+                            s_o_logmsg_s_type__info,
                             Date.now(),
                             5000
                         )
@@ -221,42 +242,63 @@ let f_handler = async function(o_request, o_conninfo) {
         };
 
         o_socket.onmessage = async function(o_evt) {
-            let o_data = JSON.parse(o_evt.data);
+            let o_wsmsg = JSON.parse(o_evt.data);
+            //check if o_wsmsg exists            
+            let o_wsmsg__existing = a_o_wsmsg.find(o => o.s_name === o_wsmsg.s_name);
+            if(o_wsmsg__existing){
 
-            let o_sfunexposed = a_o_sfunexposed.find(o=>o.s_name === o_data.s_type);
-            if(o_sfunexposed){
                 try {
-                    let a_v_arg = Array.isArray(o_data.v_data) ? o_data.v_data : [];
-                    let AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-                    let f = new AsyncFunction('f_v_crud__indb', 'f_o_model__from_s_name_table', 'f_delete_table_data', 'Deno', 'f_a_o_fsnode__from_path', '...a_v_arg', o_sfunexposed.s_f);
-                    let v_result = await f(f_v_crud__indb, f_o_model__from_s_name_table, f_db_delete_table_data, Deno, f_a_o_fsnode__from_path, ...a_v_arg);
-                    o_socket.send(JSON.stringify({
-                        v_result,
-                        s_uuid: o_data.s_uuid,
-                     }));
+                    let v_result = await f_v_result_from_o_wsmsg(
+                        o_wsmsg,
+                        o_state
+                    );
+                    if(o_wsmsg__existing.b_expecting_response){
+                        o_socket.send(JSON.stringify({
+                            v_result,
+                            s_uuid: o_wsmsg.s_uuid,
+                        }));
+                    }
                 } catch (o_error) {
-                    console.error('Error in exposed function:', o_sfunexposed.s_name, o_error);
-                    o_socket.send(JSON.stringify({ error: o_error.message, s_uuid: o_data.s_uuid }));
+                    // send response with original s_uuid so client promise resolves
+                    if(o_wsmsg__existing.b_expecting_response){
+                        o_socket.send(JSON.stringify({
+                            v_result: null,
+                            s_uuid: o_wsmsg.s_uuid,
+                            s_error: o_error.message,
+                        }));
+                    }
+                    // send error logmsg for console + GUI toast
                     o_socket.send(JSON.stringify(
                         f_o_wsmsg(
-                            'toast',
-                            f_o_toast(
-                                `${o_sfunexposed.s_name}: ${o_error.message}`,
-                                'error',
+                            o_wsmsg__logmsg.s_name,
+                            f_o_logmsg(
+                                o_error.message,
+                                true,
+                                true,
+                                s_o_logmsg_s_type__error,
                                 Date.now(),
                                 8000
                             )
                         )
                     ));
                 }
+
+                // respond to hello from client
+                if(o_wsmsg.s_name === o_wsmsg__logmsg.s_name && o_wsmsg.v_data.s_message === 'Hello from client!'){
+                    o_socket.send(JSON.stringify(
+                        f_o_wsmsg(
+                            o_wsmsg__logmsg.s_name,
+                            f_o_logmsg(
+                                'Hello from server!',
+                                true,
+                                false,
+                                s_o_logmsg_s_type__log
+                            )
+                        )
+                    ));
+                }
             }
-            if(o_data.s_type === 'hello_from_client'){
-                o_socket.send(JSON.stringify({
-                    s_type: 'hello_from_server',
-                    v_data: { s_message: 'Hello from server!' },
-                    s_uuid: o_data.s_uuid,
-                }))
-            }
+
         };
 
         o_socket.onclose = function() {
@@ -270,22 +312,6 @@ let f_handler = async function(o_request, o_conninfo) {
     let s_path = o_url.pathname;
 
 
-    let o_sfunexposed = a_o_sfunexposed.find(o=>o.s_name === s_path.slice('/api/'.length));
-    if(o_sfunexposed){
-        try {
-            let o_data = await o_request.json();
-            let a_v_arg = Array.isArray(o_data.v_data) ? o_data.v_data : [];
-            let AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-            let f = new AsyncFunction('f_v_crud__indb', 'f_o_model__from_s_name_table', 'f_delete_table_data', 'Deno', '...a_v_arg', o_sfunexposed.s_f);
-            let v_result = await f(f_v_crud__indb, f_o_model__from_s_name_table, f_db_delete_table_data, Deno, ...a_v_arg);
-            return new Response(JSON.stringify({ v_result }), {
-                headers: { 'content-type': 'application/json' },
-            });
-        } catch (o_error) {
-            console.error('Error in exposed function:', o_sfunexposed.s_name, o_error);
-            return new Response('Error: ' + o_error.message, { status: 500 });
-        }
-    }
 
 
     // serve file from absolute path

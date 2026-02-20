@@ -13,8 +13,8 @@ import {
     s_name_prop_id,
     s_name_prop_ts_created,
     s_name_prop_ts_updated,
-    o_sfunexposed__f_v_crud__indb,
-    o_sfunexposed__f_delete_table_data,
+    o_wsmsg__f_v_crud__indb,
+    o_wsmsg__f_delete_table_data,
     f_o_wsmsg
 } from './constructors.js';
 
@@ -207,7 +207,7 @@ let o_component__data = {
             if(!confirm(`Delete all data from ${s_name_table}?`)) return;
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
-                    o_sfunexposed__f_delete_table_data.s_name,
+                    o_wsmsg__f_delete_table_data.s_name,
                     [s_name_table]
                 )
             );
@@ -218,7 +218,7 @@ let o_component__data = {
             let s_name_table = f_s_name_table__from_o_model(o_self.o_model);
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
-                    o_sfunexposed__f_v_crud__indb.s_name,
+                    o_wsmsg__f_v_crud__indb.s_name,
                     ['delete', s_name_table, o_instance]
                 )
             );
@@ -240,7 +240,7 @@ let o_component__data = {
             }
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
-                    o_sfunexposed__f_v_crud__indb.s_name,
+                    o_wsmsg__f_v_crud__indb.s_name,
                     ['create', s_name_table, o_data]
                 )
             );
@@ -264,7 +264,7 @@ let o_component__data = {
             }
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
-                    o_sfunexposed__f_v_crud__indb.s_name,
+                    o_wsmsg__f_v_crud__indb.s_name,
                     ['update', s_name_table, o_data__id, o_data__update]
                 )
             );

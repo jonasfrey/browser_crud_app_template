@@ -4,9 +4,14 @@
 // add shared server-side helper functions here and import them where needed
 
 import { s_ds } from './runtimedata.js';
-import { f_o_model_instance, o_model__o_fsnode } from './localhost/constructors.js';
+import { a_o_wsmsg, f_o_model_instance, o_model__o_fsnode, o_wsmsg__deno_copy_file, o_wsmsg__deno_mkdir, o_wsmsg__deno_stat, o_wsmsg__f_a_o_fsnode, o_wsmsg__f_delete_table_data, o_wsmsg__f_v_crud__indb, o_wsmsg__logmsg, o_wsmsg__set_state_data } from './localhost/constructors.js';
+import { f_v_crud__indb } from './database_functions.js';
 
-let f_a_o_fsnode__from_path = async function(s_path, b_recursive = false) {
+let f_a_o_fsnode = async function(
+    s_path,
+    b_recursive = false,
+    b_store_in_db = false
+) {
     let a_o = [];
 
     if (!s_path) {
@@ -26,22 +31,21 @@ let f_a_o_fsnode__from_path = async function(s_path, b_recursive = false) {
                 o_model__o_fsnode,
                 {
                     s_path_absolute,
+                    s_name: s_path_absolute.split(s_ds).at(-1),
                     b_folder: o_dir_entry.isDirectory,
-                    
                 }
             );
-            //optionally store fsnode in db 
-            // let o_fsnode__fromdb = (f_v_crud__indb('read', s_name_table__fsnode, { s_path_absolute }))?.at(0);
-            // if (o_fsnode__fromdb) {
-            //     o_fsnode.n_id = o_fsnode__fromdb.n_id;
-            // } else {
-            //     let o_fsnode__created = f_v_crud__indb('create', s_name_table__fsnode, { s_path_absolute, b_folder: o_dir_entry.isDirectory });
-            //     o_fsnode.n_id = o_fsnode__created.n_id;
-            // }
-
-            o_fsnode.s_name = o_fsnode.s_path_absolute.split(s_ds).at(-1);
-            if (o_dir_entry.isDirectory && b_recursive) {
-                o_fsnode.a_o_fsnode = await f_a_o_fsnode__from_path(s_path_absolute, b_recursive);
+            if(b_store_in_db){
+                let o_fsnode__fromdb = (f_v_crud__indb('read', s_name_table__fsnode, { s_path_absolute }))?.at(0);
+                if (o_fsnode__fromdb) {
+                    o_fsnode.n_id = o_fsnode__fromdb.n_id;
+                } else {
+                    let o_fsnode__created = f_v_crud__indb('create', s_name_table__fsnode, { s_path_absolute, b_folder: o_dir_entry.isDirectory });
+                    o_fsnode.n_id = o_fsnode__created.n_id;
+                }
+                if (o_dir_entry.isDirectory && b_recursive) {
+                    o_fsnode.a_o_fsnode = await f_a_o_fsnode(s_path_absolute, b_recursive);
+                }
             }
 
             a_o.push(o_fsnode);
@@ -59,6 +63,65 @@ let f_a_o_fsnode__from_path = async function(s_path, b_recursive = false) {
     return a_o;
 };
 
+
+
+o_wsmsg__deno_copy_file.f_v_server_implementation = function(o_wsmsg){
+    let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+    return Deno.copyFile(...a_v_arg);
+}
+o_wsmsg__deno_stat.f_v_server_implementation = function(o_wsmsg){
+    let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+    return Deno.stat(...a_v_arg);
+}
+o_wsmsg__deno_mkdir.f_v_server_implementation = function(o_wsmsg){
+    let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+    return Deno.mkdir(...a_v_arg);
+}
+o_wsmsg__f_v_crud__indb.f_v_server_implementation = function(o_wsmsg){
+    let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+    return f_v_crud__indb(...a_v_arg);
+}
+o_wsmsg__f_delete_table_data.f_v_server_implementation = function(o_wsmsg){
+    let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+    return f_delete_table_data(...a_v_arg);
+}
+o_wsmsg__f_a_o_fsnode.f_v_server_implementation = function(o_wsmsg){
+    let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+    return f_a_o_fsnode(...a_v_arg);
+}
+o_wsmsg__logmsg.f_v_server_implementation = function(o_wsmsg){
+    let o_logmsg = o_wsmsg.v_data;
+    if(o_logmsg.b_consolelog){
+        console[o_logmsg.s_type](o_logmsg.s_message);
+    }
+    return null;
+}
+o_wsmsg__set_state_data.f_v_server_implementation = function(o_wsmsg, o_wsmsg__existing, o_state){
+    o_state[o_wsmsg.v_data.s_property] = o_wsmsg.v_data.value;
+    return null;
+}
+let f_v_result_from_o_wsmsg = async function(
+    o_wsmsg,
+    o_state
+){
+    let o_wsmsg__existing = a_o_wsmsg.find(o=>o.s_name === o_wsmsg.s_name);
+    if(!o_wsmsg__existing){
+        console.error('No such wsmsg:', o_wsmsg.s_name);
+        return null;
+    }
+    if(!o_wsmsg__existing.f_v_server_implementation) {
+        console.error('No server implementation for wsmsg:', o_wsmsg.s_name);
+        return null;
+    }
+    return o_wsmsg__existing.f_v_server_implementation(
+        o_wsmsg,
+        o_wsmsg__existing, 
+        o_state
+    );
+
+}
+
 export {
-    f_a_o_fsnode__from_path
+    f_a_o_fsnode,
+    f_v_result_from_o_wsmsg
 };

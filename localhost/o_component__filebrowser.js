@@ -5,8 +5,8 @@ import { f_send_wsmsg_with_response, o_state } from './index.js';
 import { f_s_path_parent } from './functions.js';
 import {
     f_o_wsmsg,
-    o_sfunexposed__f_v_crud__indb,
-    o_sfunexposed__f_a_o_fsnode__from_path,
+    o_wsmsg__f_v_crud__indb,
+    o_wsmsg__f_a_o_fsnode,
 } from './constructors.js';
 
 let o_component__filebrowser = {
@@ -68,9 +68,13 @@ let o_component__filebrowser = {
         };
     },
     methods: {
-        f_load_fsnodes: async function() {
+        f_load_a_o_fsnode: async function() {
             let o_resp = await f_send_wsmsg_with_response(
-                f_o_wsmsg(o_sfunexposed__f_a_o_fsnode__from_path.s_name, [this.s_path_absolute])
+                f_o_wsmsg(o_wsmsg__f_a_o_fsnode.s_name, [
+                    this.s_path_absolute,
+                    false, 
+                    false
+                ])
             );
             this.a_o_fsnode = o_resp.v_result || [];
         },
@@ -78,7 +82,7 @@ let o_component__filebrowser = {
             let o_self = this;
             await f_send_wsmsg_with_response(
                 f_o_wsmsg(
-                    o_sfunexposed__f_v_crud__indb.s_name,
+                    o_wsmsg__f_v_crud__indb.s_name,
                     ['update', 'a_o_keyvalpair', { n_id: o_self.n_id__keyvalpair }, { s_key: 's_path_absolute__filebrowser', s_value: s_path_absolute }]
                 )
             );
@@ -89,14 +93,14 @@ let o_component__filebrowser = {
             if (!o_fsnode.b_folder) return;
             this.s_path_absolute = o_fsnode.s_path_absolute;
             await this.f_save_path(this.s_path_absolute);
-            await this.f_load_fsnodes();
+            await this.f_load_a_o_fsnode();
         },
         f_navigate_up: async function() {
             let s_path_parent = f_s_path_parent(this.s_path_absolute, this.s_ds);
             if (s_path_parent === this.s_path_absolute) return;
             this.s_path_absolute = s_path_parent;
             await this.f_save_path(this.s_path_absolute);
-            await this.f_load_fsnodes();
+            await this.f_load_a_o_fsnode();
         },
     },
     created: async function() {
@@ -109,7 +113,7 @@ let o_component__filebrowser = {
         } else {
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
-                    o_sfunexposed__f_v_crud__indb.s_name,
+                    o_wsmsg__f_v_crud__indb.s_name,
                     ['create', 'a_o_keyvalpair', { s_key: 's_path_absolute__filebrowser', s_value: o_self.s_path_absolute }]
                 )
             );
@@ -117,7 +121,7 @@ let o_component__filebrowser = {
             if (!o_state.a_o_keyvalpair) o_state.a_o_keyvalpair = [];
             o_state.a_o_keyvalpair.push(o_resp.v_result);
         }
-        await o_self.f_load_fsnodes();
+        await o_self.f_load_a_o_fsnode();
     },
 };
 

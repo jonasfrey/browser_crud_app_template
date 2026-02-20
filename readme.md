@@ -49,7 +49,7 @@ A minimal boilerplate for a browser-based CRUD application.
     ├── index.html            # HTML entry point
     ├── index.js              # Vue 3 app, routing, WebSocket client
     ├── index.css             # Styling
-    ├── constructors.js       # Model definitions, sfunexposed list, factory functions
+    ├── constructors.js       # Model definitions, wsmsg list, factory functions
     ├── o_component__data.js  # CRUD data management component (full Create/Read/Update/Delete)
     ├── functions.js          # Frontend utility functions (add yours here)
     └── lib/

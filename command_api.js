@@ -2,6 +2,6 @@
 
 // HTTP API command handlers
 // add functions here that should be reachable via /api/<function-name> HTTP endpoints
-// expose them via a_o_sfunexposed in webserved_dir/constructors.js
+// expose them via a_o_wsmsg in webserved_dir/constructors.js
 
 export {};

@@ -2,13 +2,15 @@
 
 import { createApp, reactive, markRaw } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
-import { 
+import {
     a_o_model,
-    f_o_toast,
     f_s_name_table__from_o_model,
-    o_sfunexposed__f_v_crud__indb,
-    a_o_sfunexposed,
-    f_o_wsmsg
+    o_wsmsg__f_v_crud__indb,
+    o_wsmsg__logmsg,
+    a_o_wsmsg,
+    f_o_wsmsg,
+    f_o_logmsg,
+    s_o_logmsg_s_type__log,
 } from './constructors.js';
 
 import {
@@ -40,7 +42,7 @@ let o_state = reactive({
     a_o_student: [],
     o_course_o_student: [],
     a_o_toast: [
-        f_o_toast('Welcome to the app!', 'success', Date.now(), 5000),
+        f_o_logmsg('Welcome to the app!', false, true, 'success', Date.now(), 5000),
     ],
     n_ts_ms_now: Date.now(),
 });
@@ -81,35 +83,42 @@ let f_connect = async function() {
                 o_state.s_status = 'connected';
                 o_state.b_connected = true;
 
-                let o_resp = await f_send_wsmsg_with_response(
+                o_socket.send(JSON.stringify(
                     f_o_wsmsg(
-                        'hello_from_client',
-                        { s_message: 'Hello from client!' }
+                        o_wsmsg__logmsg.s_name,
+                        f_o_logmsg(
+                            'Hello from client!',
+                            true,
+                            false,
+                            s_o_logmsg_s_type__log
+                        )
                     )
-                )
-                console.log(o_resp)
+                ));
                 resolve();
             };
             
-            o_socket.onmessage = function(o_evt) {
-                let o_data = JSON.parse(o_evt.data);
+            o_socket.onmessage = async function(o_evt) {
+                let o_wsmsg = JSON.parse(o_evt.data);
 
-                if(o_data.s_type === 'init'){
-                    o_state.s_ds = o_data.s_ds;
-                    o_state.s_root_dir = o_data.s_root_dir;
-                    return;
-                }
-                if(o_data?.o_model){
-                    let s_name_table = f_s_name_table__from_o_model(o_data.o_model);
-                    o_state[s_name_table] = o_data.v_data;
-                    return;
-                }
-                if(o_data.s_type === 'toast'){
-                    o_state.a_o_toast.push(o_data.v_data);
-                    return;
-                }
+                // run UUID handlers first — server responses {v_result, s_uuid} have no s_name
+                // so they must reach promise handlers before the definition lookup
                 for (let f_handler of a_f_handler) {
-                    f_handler(o_data);
+                    f_handler(o_wsmsg);
+                }
+
+                let o_wsmsg__existing = a_o_wsmsg.find(function(o) { return o.s_name === o_wsmsg.s_name; });
+                if(!o_wsmsg__existing){
+                    return;
+                }
+
+                if(o_wsmsg__existing.f_v_client_implementation){
+                    let v = await o_wsmsg__existing.f_v_client_implementation(o_wsmsg, o_wsmsg__existing, o_state);
+                    if(o_wsmsg__existing.b_expecting_response){
+                        o_socket.send(JSON.stringify({
+                            v_result: v,
+                            s_uuid: o_wsmsg.s_uuid,
+                        }));
+                    }
                 }
             };
 

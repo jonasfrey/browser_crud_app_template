@@ -164,81 +164,112 @@ let o_model__o_keyvalpair = f_o_model({
     ]
 });
 
-let f_o_toast = function(
+
+
+
+// console.log("Basic message");
+// console.error("Error message");
+// console.warn("Warning message");
+// console.info("Info message");
+// console.debug("Debug message");
+// console.table([{name: "John", age: 30}]);
+let s_o_logmsg_s_type__log = 'log';
+let s_o_logmsg_s_type__error = 'error';
+let s_o_logmsg_s_type__warn = 'warn';
+let s_o_logmsg_s_type__info = 'info';
+let s_o_logmsg_s_type__debug = 'debug';
+let s_o_logmsg_s_type__table = 'table';
+
+let f_o_logmsg = function(
     s_message, 
-    s_type, // info (blue), success (green), warning (yellow), error (red)
+    b_consolelog = true,
+    b_guilog = false,
+    s_type, 
     n_ts_ms_created,
     n_ttl_ms
 ){
     return {
-        s_message,
+        s_message, 
+        b_consolelog,
+        b_guilog,
         s_type, 
         n_ts_ms_created,
         n_ttl_ms
     }
 }
 
+
 let a_o_model = [
     o_model__o_student,
     o_model__o_course,
-    o_model__o_course_o_student, 
-    o_model__o_wsclient, 
+    o_model__o_course_o_student,
+    o_model__o_wsclient,
     o_model__o_fsnode,
     o_model__o_keyvalpair
 ];
 
-
-let f_o_sfunexposed = function(
-    s_name, 
-    s_f
+// definition factory — creates message type templates for the a_o_wsmsg registry
+let f_o_wsmsg_def = function(
+    s_name,
+    b_expecting_response = false
 ){
     return {
-        s_name, 
-        s_f
+        s_name,
+        b_expecting_response,
+        f_v_client_implementation: null,
+        f_v_server_implementation: null
     }
 }
-let o_sfunexposed__deno_copy_file = f_o_sfunexposed(
-    'deno_copy_file',
-    `return await Deno.copyFile(...a_v_arg)`
-);
-let o_sfunexposed__deno_stat = f_o_sfunexposed(
-    'deno_stat',
-    `return await Deno.stat(...a_v_arg)`
-);
-let o_sfunexposed__deno_mkdir = f_o_sfunexposed(
-    'deno_mkdir',
-    `return await Deno.mkdir(...a_v_arg)`
-);
-let o_sfunexposed__f_v_crud__indb = f_o_sfunexposed(
-    'f_v_crud__indb',
-    `return await f_v_crud__indb(...a_v_arg)`
-)
-let o_sfunexposed__f_delete_table_data = f_o_sfunexposed(
-    'f_delete_table_data',
-    `return await f_delete_table_data(...a_v_arg)`
-)
-let o_sfunexposed__f_a_o_fsnode__from_path = f_o_sfunexposed(
-    'f_a_o_fsnode__from_path',
-    `return await f_a_o_fsnode__from_path(...a_v_arg)`
-)
-let a_o_sfunexposed = [
-    o_sfunexposed__deno_copy_file,
-    o_sfunexposed__deno_stat,
-    o_sfunexposed__deno_mkdir,
-    o_sfunexposed__f_v_crud__indb,
-    o_sfunexposed__f_delete_table_data,
-    o_sfunexposed__f_a_o_fsnode__from_path,
-]
+
+// instance factory — creates actual messages to send over the wire
 let f_o_wsmsg = function(
-    s_type, 
+    s_name,
     v_data
-){  
+){
     return {
-        s_type,
-        v_data, 
-        s_uuid: crypto.randomUUID(),
+        s_name,
+        v_data,
+        s_uuid: crypto.randomUUID()
     }
 }
+
+// message type definitions
+let o_wsmsg__deno_copy_file = f_o_wsmsg_def('deno_copy_file', false);
+let o_wsmsg__deno_stat = f_o_wsmsg_def('deno_stat', false);
+let o_wsmsg__deno_mkdir = f_o_wsmsg_def('deno_mkdir', false);
+let o_wsmsg__f_v_crud__indb = f_o_wsmsg_def('f_v_crud__indb', true);
+let o_wsmsg__f_delete_table_data = f_o_wsmsg_def('f_delete_table_data', true);
+let o_wsmsg__f_a_o_fsnode = f_o_wsmsg_def('f_a_o_fsnode', true);
+let o_wsmsg__logmsg = f_o_wsmsg_def('logmsg', false);
+let o_wsmsg__set_state_data = f_o_wsmsg_def('set_state_data', false);
+
+// client implementations
+o_wsmsg__logmsg.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state){
+    let o_logmsg = o_wsmsg.v_data;
+    if(o_logmsg.b_consolelog){
+        console[o_logmsg.s_type](o_logmsg.s_message);
+    }
+    if(o_logmsg.b_guilog){
+        o_logmsg.n_ts_ms_created = o_logmsg.n_ts_ms_created || Date.now();
+        o_logmsg.n_ttl_ms = o_logmsg.n_ttl_ms || 5000;
+        o_state.a_o_toast.push(o_logmsg);
+    }
+}
+o_wsmsg__set_state_data.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state){
+    o_state[o_wsmsg.v_data.s_property] = o_wsmsg.v_data.value;
+}
+
+let a_o_wsmsg = [
+    o_wsmsg__deno_copy_file,
+    o_wsmsg__deno_stat,
+    o_wsmsg__deno_mkdir,
+    o_wsmsg__f_v_crud__indb,
+    o_wsmsg__f_delete_table_data,
+    o_wsmsg__f_a_o_fsnode,
+    o_wsmsg__logmsg,
+    o_wsmsg__set_state_data,
+]
+
 export {
     o_model__o_student,
     o_model__o_course,
@@ -255,13 +286,22 @@ export {
     s_name_prop_ts_updated,
     f_a_s_error__invalid_model_instance,
     s_name_prop_id,
-    f_o_toast,
-    a_o_sfunexposed,
-    o_sfunexposed__deno_copy_file,
-    o_sfunexposed__deno_stat,
-    o_sfunexposed__deno_mkdir,
-    o_sfunexposed__f_v_crud__indb,
-    o_sfunexposed__f_delete_table_data,
-    o_sfunexposed__f_a_o_fsnode__from_path,
+    f_o_logmsg,
+    a_o_wsmsg,
+    o_wsmsg__deno_copy_file,
+    o_wsmsg__deno_stat,
+    o_wsmsg__deno_mkdir,
+    o_wsmsg__f_v_crud__indb,
+    o_wsmsg__set_state_data,
+    o_wsmsg__f_delete_table_data,
+    o_wsmsg__f_a_o_fsnode,
+    o_wsmsg__logmsg,
     f_o_wsmsg,
+    f_o_wsmsg_def,
+    s_o_logmsg_s_type__log,
+    s_o_logmsg_s_type__error,
+    s_o_logmsg_s_type__warn,
+    s_o_logmsg_s_type__info,
+    s_o_logmsg_s_type__debug,
+    s_o_logmsg_s_type__table
 }
