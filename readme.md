@@ -7,14 +7,14 @@ A minimal boilerplate for a browser-based CRUD application.
 
 ## Quick start
 
-Create a new project with a single command:
+Create a new project directory, then initialize it:
 ```
-deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui@0.1.1/init'; await f_init_project('project_name');"
+mkdir project_name && cd project_name
+deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui/init'; await f_init_project();"
 ```
 
 Then start the server:
 ```
-cd project_name
 deno task run
 ```
 

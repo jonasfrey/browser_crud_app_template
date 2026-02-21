@@ -4,10 +4,10 @@
 // Files are discovered dynamically (via JSR API or local filesystem) so the
 // initialized project always matches the published template exactly.
 //
-// Usage from JSR:
-//   deno run -A jsr:@apn/websersocketgui/init <target_directory>
+// Usage from JSR (initializes current directory):
+//   deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui/init'; await f_init_project();"
 // Usage direct:
-//   deno run -A init.js <target_directory>
+//   deno run -A init.js [target_directory]    (defaults to cwd if omitted)
 
 let s_url__package = new URL('.', import.meta.url);
 
@@ -546,6 +546,9 @@ main, .content {
 // ─── main init function ─────────────────────────────────────────────────────────
 
 let f_init_project = async function(s_path__target) {
+    if (!s_path__target) {
+        s_path__target = Deno.cwd();
+    }
     console.log(`initializing project in: ${s_path__target}`);
 
     let s_uuid = crypto.randomUUID();
@@ -658,12 +661,7 @@ let f_init_project = async function(s_path__target) {
 // CLI entry point
 if (import.meta.main) {
     let s_path = Deno.args[0];
-    if (!s_path) {
-        console.error('usage: deno run -A init.js <target_directory>');
-        console.error('   or: deno run -A jsr:@apn/websersocketgui/init <target_directory>');
-        Deno.exit(1);
-    }
-    if (!s_path.startsWith('/')) {
+    if (s_path && !s_path.startsWith('/')) {
         s_path = `${Deno.cwd()}/${s_path}`;
     }
     await f_init_project(s_path);
