@@ -1,12 +1,17 @@
 // Copyright (C) [2026] [Jonas Immanuel Frey] - Licensed under GPLv2. See LICENSE file for details.
 
-// This script initializes a new project by copying the boilerplate as-is.
+// This script initializes a new project by copying all files from the package.
+// Files are discovered dynamically (via JSR API or local filesystem) so the
+// initialized project always matches the published template exactly.
+//
 // Usage from JSR:
-//   deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui@0.1.1/init'; await f_init_project('project_name');"
+//   deno run -A jsr:@apn/websersocketgui/init <target_directory>
 // Usage direct:
 //   deno run -A init.js <target_directory>
 
 let s_url__package = new URL('.', import.meta.url);
+
+// ─── helpers ────────────────────────────────────────────────────────────────────
 
 let f_s_read_package_file = async function(s_relative_path) {
     let o_url = new URL(s_relative_path, s_url__package);
@@ -25,16 +30,68 @@ let f_write = async function(s_path, s_content) {
     await Deno.writeTextFile(s_path, s_content);
 };
 
-let f_s_download = async function(s_url) {
-    console.log(`  downloading: ${s_url}`);
-    let o_response = await fetch(s_url);
-    if (!o_response.ok) {
-        throw new Error(`download failed: ${s_url} (${o_response.status})`);
+// ─── file discovery ─────────────────────────────────────────────────────────────
+
+// discover files via the JSR version metadata API
+let f_a_s_path__from_jsr = async function() {
+    // parse JSR URL: https://jsr.io/@scope/name/version/file.js
+    let o_match = s_url__package.href.match(/jsr\.io\/(@[^/]+\/[^/]+)\/([^/]+)/);
+    if (!o_match) {
+        throw new Error(`cannot parse JSR package URL from: ${s_url__package.href}`);
     }
-    return await o_response.text();
+    let s_package = o_match[1];
+    let s_version = o_match[2];
+    let s_url__meta = `https://jsr.io/${s_package}/${s_version}_meta.json`;
+    console.log(`  fetching package manifest from JSR...`);
+    let o_response = await fetch(s_url__meta);
+    if (!o_response.ok) {
+        throw new Error(`failed to fetch JSR metadata from ${s_url__meta} (${o_response.status})`);
+    }
+    let o_meta = await o_response.json();
+    // manifest keys are like "/init.js", "/localhost/index.js"
+    return Object.keys(o_meta.manifest).map(s => s.replace(/^\//, ''));
 };
 
-// ─── file generators ────────────────────────────────────────────────────────────
+// discover files by walking the local filesystem
+let f_a_s_path__from_local = async function(s_dir, s_prefix) {
+    let a_s_path = [];
+    for await (let o_entry of Deno.readDir(s_dir)) {
+        let s_rel = s_prefix ? `${s_prefix}/${o_entry.name}` : o_entry.name;
+        if (o_entry.isDirectory) {
+            if (o_entry.name.startsWith('.')) continue;
+            if (o_entry.name === 'planning') continue;
+            if (o_entry.name === 'node_modules') continue;
+            a_s_path = a_s_path.concat(
+                await f_a_s_path__from_local(`${s_dir}/${o_entry.name}`, s_rel)
+            );
+        } else if (o_entry.isFile) {
+            a_s_path.push(s_rel);
+        }
+    }
+    return a_s_path;
+};
+
+// ─── skip logic ─────────────────────────────────────────────────────────────────
+
+let o_set__skip = new Set([
+    'init.js',
+    'exports.js',
+    'deno.json',
+    'deno.lock',
+    'LICENSE',
+    'readme.md',
+    'CLAUDE.md',
+    'improvements.md',
+    'AI_responses_summaries.md',
+]);
+
+let f_b_should_skip = function(s_path) {
+    if (o_set__skip.has(s_path)) return true;
+    if (s_path.startsWith('.')) return true;
+    return false;
+};
+
+// ─── file generators (fallback for files JSR cannot serve) ──────────────────────
 
 let f_s_generate__deno_json = function(s_uuid) {
     return JSON.stringify({
@@ -62,7 +119,7 @@ let f_s_generate__gitignore = function() {
         'planning/\n';
 };
 
-// JSR only serves .js/.ts files — HTML and CSS must be generated inline
+// JSR only serves .js/.ts — HTML and CSS need inline fallback generators
 
 let f_s_generate__index_html = function() {
     return `<!DOCTYPE html>
@@ -491,95 +548,83 @@ main, .content {
 let f_init_project = async function(s_path__target) {
     console.log(`initializing project in: ${s_path__target}`);
 
-    // generate UUID for this project instance
     let s_uuid = crypto.randomUUID();
 
-    // create directory structure
-    await Deno.mkdir(`${s_path__target}/localhost/lib`, { recursive: true });
+    // ── 1. discover all files in the package ──
+
+    let b_jsr = s_url__package.protocol === 'https:';
+    let a_s_path__all;
+
+    if (b_jsr) {
+        console.log('  source: JSR package');
+        a_s_path__all = await f_a_s_path__from_jsr();
+    } else {
+        console.log('  source: local filesystem');
+        let s_dir = s_url__package.pathname;
+        if (s_dir.endsWith('/')) s_dir = s_dir.slice(0, -1);
+        a_s_path__all = await f_a_s_path__from_local(s_dir, '');
+    }
+
+    console.log(`  found ${a_s_path__all.length} files in package`);
+
+    // ── 2. create base directories ──
+
     await Deno.mkdir(`${s_path__target}/.gitignored`, { recursive: true });
 
-    // ── 1. copy websersocket with new UUID filename ──
+    // ── 3. copy all package files (with filtering and special handling) ──
 
-    let s_deno_json__package = await f_s_read_package_file('deno.json');
-    let o_deno_json__package = JSON.parse(s_deno_json__package);
-    let a_s_match = o_deno_json__package.tasks?.run?.match(/websersocket[_0-9a-f-]*\.js/);
-    let s_filename__ws = a_s_match ? a_s_match[0] : 'websersocket.js';
-    let s_websersocket = await f_s_read_package_file(s_filename__ws);
-    await f_write(`${s_path__target}/websersocket_${s_uuid}.js`, s_websersocket);
-    console.log(`  created: websersocket_${s_uuid}.js`);
+    let o_set__copied = new Set();
 
-    // ── 2. generate files that JSR cannot serve (html, css) ──
+    for (let s_path of a_s_path__all) {
+        if (f_b_should_skip(s_path)) {
+            continue;
+        }
 
-    await f_write(`${s_path__target}/localhost/index.html`, f_s_generate__index_html());
-    console.log('  created: localhost/index.html');
+        // special: websersocket_*.js -> rename with new UUID
+        if (s_path.match(/^websersocket.*\.js$/)) {
+            try {
+                let s_content = await f_s_read_package_file(s_path);
+                await f_write(`${s_path__target}/websersocket_${s_uuid}.js`, s_content);
+                console.log(`  copied:  websersocket_${s_uuid}.js`);
+                o_set__copied.add('websersocket');
+            } catch (o_error) {
+                console.error(`  ERROR:   websersocket: ${o_error.message}`);
+            }
+            continue;
+        }
 
-    await f_write(`${s_path__target}/localhost/index.css`, f_s_generate__index_css());
-    console.log('  created: localhost/index.css');
-
-    // ── 3. copy project files as-is ──
-
-    let a_s_path__copy = [
-        'localhost/index.js',
-        'localhost/constructors.js',
-        'localhost/functions.js',
-        'localhost/bgshader.js',
-        'localhost/o_component__data.js',
-        'localhost/o_component__filebrowser.js',
-        'default_data.js',
-        'database_functions.js',
-        'runtimedata.js',
-        'functions.js',
-        'command_api.js',
-        'function_testings.js',
-    ];
-
-    for (let s_path of a_s_path__copy) {
+        // regular copy
         try {
             let s_content = await f_s_read_package_file(s_path);
             await f_write(`${s_path__target}/${s_path}`, s_content);
             console.log(`  copied:  ${s_path}`);
+            o_set__copied.add(s_path);
         } catch (o_error) {
             console.warn(`  skipped: ${s_path} (${o_error.message})`);
         }
     }
 
-    // ── 4. Vue libraries ──
+    // ── 4. generate files that were not copied (JSR cannot serve non-JS) ──
 
-    let a_o_lib = [
-        {
-            s_path: 'localhost/lib/vue.esm-browser.js',
-            s_url__cdn: 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-        },
-        {
-            s_path: 'localhost/lib/vue-router.esm-browser.js',
-            s_url__cdn: 'https://unpkg.com/vue-router@4/dist/vue-router.esm-browser.js'
-        },
-    ];
-
-    for (let o_lib of a_o_lib) {
-        let s_content = null;
-        try {
-            s_content = await f_s_read_package_file(o_lib.s_path);
-        } catch {
-            try {
-                s_content = await f_s_download(o_lib.s_url__cdn);
-            } catch (o_error) {
-                console.error(`  ERROR: could not get ${o_lib.s_path}: ${o_error.message}`);
-                console.error(`  please download manually from ${o_lib.s_url__cdn}`);
-                continue;
-            }
-        }
-        await f_write(`${s_path__target}/${o_lib.s_path}`, s_content);
-        console.log(`  created: ${o_lib.s_path}`);
+    if (!o_set__copied.has('localhost/index.html')) {
+        await f_write(`${s_path__target}/localhost/index.html`, f_s_generate__index_html());
+        console.log('  generated: localhost/index.html');
     }
 
-    await f_write(
-        `${s_path__target}/localhost/lib/vue-devtools-api-stub.js`,
-        'export let setupDevtoolsPlugin = function() {};\n'
-    );
-    console.log('  created: localhost/lib/vue-devtools-api-stub.js');
+    if (!o_set__copied.has('localhost/index.css')) {
+        await f_write(`${s_path__target}/localhost/index.css`, f_s_generate__index_css());
+        console.log('  generated: localhost/index.css');
+    }
 
-    // ── 5. generate config files ──
+    if (!o_set__copied.has('localhost/lib/vue-devtools-api-stub.js')) {
+        await f_write(
+            `${s_path__target}/localhost/lib/vue-devtools-api-stub.js`,
+            'export let setupDevtoolsPlugin = function() {};\n'
+        );
+        console.log('  generated: localhost/lib/vue-devtools-api-stub.js');
+    }
+
+    // ── 5. generate config files (always generated, need UUID) ──
 
     await f_write(`${s_path__target}/deno.json`, f_s_generate__deno_json(s_uuid));
     console.log('  created: deno.json');
