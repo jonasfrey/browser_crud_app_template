@@ -5,19 +5,20 @@ A minimal boilerplate for a browser-based CRUD application.
 
 ---
 
-## Setup
+## Quick start
 
-1. Copy the env template and adjust values if needed:
-   ```
-   cp .env.example .env
-   ```
+Create a new project with a single command:
+```
+deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui@0.1.1/init'; await f_init_project('project_name');"
+```
 
-2. Start the server:
-   ```
-   deno task start
-   ```
+Then start the server:
+```
+cd project_name
+deno task run
+```
 
-3. Open `http://localhost:8000` in your browser.
+Open `http://localhost:8000` in your browser.
 
 ---
 
@@ -27,7 +28,7 @@ A minimal boilerplate for a browser-based CRUD application.
 |--------------|--------------------------|-------------------------------------|
 | `PORT`       | `8000`                   | HTTP server port                    |
 | `DB_PATH`    | `./.gitignored/app.db`   | Path to the SQLite database file    |
-| `STATIC_DIR` | `./webserved_dir`        | Directory served as static frontend |
+| `STATIC_DIR` | `./localhost`            | Directory served as static frontend |
 
 ---
 
@@ -35,17 +36,15 @@ A minimal boilerplate for a browser-based CRUD application.
 
 ```
 /
-├── webserver.js              # Deno HTTP server, WebSocket handler, static file serving
+├── websersocket_<uuid>.js    # Deno HTTP server, WebSocket handler, static file serving
 ├── database_functions.js     # SQLite CRUD operations
 ├── default_data.js           # Default data seeding (runs on startup)
 ├── runtimedata.js            # Runtime paths and OS info
 ├── functions.js              # Backend utility functions (add yours here)
-├── command_api.js            # HTTP API command stubs (add yours here)
-├── function_testings.js      # Deno tests — run with: deno task test
 ├── deno.json                 # Task definitions
-├── .env                      # Local config (gitignored — copy from .env.example)
+├── .env                      # Local config (gitignored)
 ├── .env.example              # Committed env template
-└── webserved_dir/            # Files served to the browser
+└── localhost/                # Files served to the browser
     ├── index.html            # HTML entry point
     ├── index.js              # Vue 3 app, routing, WebSocket client
     ├── index.css             # Styling
@@ -61,9 +60,9 @@ A minimal boilerplate for a browser-based CRUD application.
 
 ## Adding a new model
 
-1. Define it in [webserved_dir/constructors.js](webserved_dir/constructors.js) using `f_o_model(...)`.
+1. Define it in [localhost/constructors.js](localhost/constructors.js) using `f_o_model(...)`.
 2. Add it to the `a_o_model` array — the database table is created automatically on startup.
-3. Add its data key to `o_state` in [webserved_dir/index.js](webserved_dir/index.js) so the frontend receives and stores it.
+3. Add its data key to `o_state` in [localhost/index.js](localhost/index.js) so the frontend receives and stores it.
 
 ---
 

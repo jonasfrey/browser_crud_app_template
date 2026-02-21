@@ -26,44 +26,7 @@ import {
     s_root_dir,
 } from "./runtimedata.js";
 
-// guard: after initialization the file has a UUID in its name — require deno task
-let b_initialized = /websersocket_[0-9a-f-]{36}\.js$/.test(Deno.mainModule);
-if (b_initialized && !Deno.env.get('B_DENO_TASK')) {
-    console.error('run with `deno task run` to start the server');
-    Deno.exit(1);
-}
-let s_uuid_websersocket = crypto.randomUUID();
 let o_state = {}
-
-// first-run: generate S_UUID, persist it, update deno.json, rename this file
-let s_uuid = Deno.env.get('S_UUID');
-if (!s_uuid) {
-    s_uuid = crypto.randomUUID();
-
-    let f_s_append_uuid_to_env = async function(s_path_env) {
-        let s_content = '';
-        try { s_content = await Deno.readTextFile(s_path_env); } catch { /* file may not exist */ }
-        if (s_content.length > 0 && !s_content.endsWith('\n')) s_content += '\n';
-        s_content += `S_UUID=${s_uuid}\n`;
-        await Deno.writeTextFile(s_path_env, s_content);
-    };
-
-    await f_s_append_uuid_to_env(`${s_root_dir}${s_ds}.env`);
-
-    let o_deno_json = JSON.parse(await Deno.readTextFile(`${s_root_dir}${s_ds}deno.json`));
-    o_deno_json.tasks = {
-        run: `B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_${s_uuid}.js`,
-        test: o_deno_json.tasks.test,
-    };
-    await Deno.writeTextFile(`${s_root_dir}${s_ds}deno.json`, JSON.stringify(o_deno_json, null, 4));
-
-    let s_path__self = `${s_root_dir}${s_ds}websersocket.js`;
-    let s_path__self__new = `${s_root_dir}${s_ds}websersocket_${s_uuid}.js`;
-    await Deno.rename(s_path__self, s_path__self__new);
-
-    console.log('initialization done');
-    Deno.exit(0);
-}
 
 f_init_db();
 
