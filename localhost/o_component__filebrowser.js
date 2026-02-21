@@ -1,6 +1,6 @@
 // Copyright (C) [2026] [Jonas Immanuel Frey] - Licensed under GPLv2. See LICENSE file for details.
 
-import { f_o_html_from_o_js } from "https://deno.land/x/handyhelpers@5.4.2/mod.js";
+import { f_o_html_from_o_js } from "./lib/handyhelpers.js";
 import { f_send_wsmsg_with_response, o_state } from './index.js';
 import { f_s_path_parent } from './functions.js';
 import {

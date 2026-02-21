@@ -51,8 +51,7 @@ let f_handler = async function(o_request, o_conninfo) {
         // TODO: implement authentication before upgrading the WebSocket connection
         // e.g. validate a token from query params or cookies against a secret from .env
         let { socket: o_socket, response: o_response } = Deno.upgradeWebSocket(o_request);
-        console.log(o_request)
-        const s_ip = o_request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        let s_ip = o_request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
         || o_conninfo.remoteAddr.hostname;
         let o_wsclient = f_o_model_instance(
             o_model__o_wsclient,
@@ -277,7 +276,8 @@ let f_handler = async function(o_request, o_conninfo) {
 
 
 
-    // serve file from absolute path
+    // WARNING: this endpoint reads arbitrary absolute paths with no restrictions.
+    // restrict to a safe base directory before exposing this server on a network.
     if (s_path === '/api/file') {
         let s_path_file = o_url.searchParams.get('path');
         if (!s_path_file) {

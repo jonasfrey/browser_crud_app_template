@@ -4,8 +4,8 @@
 // add shared server-side helper functions here and import them where needed
 
 import { s_ds } from './runtimedata.js';
-import { a_o_wsmsg, f_o_model_instance, o_model__o_fsnode, o_wsmsg__deno_copy_file, o_wsmsg__deno_mkdir, o_wsmsg__deno_stat, o_wsmsg__f_a_o_fsnode, o_wsmsg__f_delete_table_data, o_wsmsg__f_v_crud__indb, o_wsmsg__logmsg, o_wsmsg__set_state_data } from './localhost/constructors.js';
-import { f_v_crud__indb } from './database_functions.js';
+import { a_o_wsmsg, f_o_model_instance, f_s_name_table__from_o_model, o_model__o_fsnode, o_wsmsg__deno_copy_file, o_wsmsg__deno_mkdir, o_wsmsg__deno_stat, o_wsmsg__f_a_o_fsnode, o_wsmsg__f_delete_table_data, o_wsmsg__f_v_crud__indb, o_wsmsg__logmsg, o_wsmsg__set_state_data } from './localhost/constructors.js';
+import { f_v_crud__indb, f_db_delete_table_data } from './database_functions.js';
 
 let f_a_o_fsnode = async function(
     s_path,
@@ -36,11 +36,11 @@ let f_a_o_fsnode = async function(
                 }
             );
             if(b_store_in_db){
-                let o_fsnode__fromdb = (f_v_crud__indb('read', s_name_table__fsnode, { s_path_absolute }))?.at(0);
+                let o_fsnode__fromdb = (f_v_crud__indb('read', f_s_name_table__from_o_model(o_model__o_fsnode), { s_path_absolute }))?.at(0);
                 if (o_fsnode__fromdb) {
                     o_fsnode.n_id = o_fsnode__fromdb.n_id;
                 } else {
-                    let o_fsnode__created = f_v_crud__indb('create', s_name_table__fsnode, { s_path_absolute, b_folder: o_dir_entry.isDirectory });
+                    let o_fsnode__created = f_v_crud__indb('create', f_s_name_table__from_o_model(o_model__o_fsnode), { s_path_absolute, b_folder: o_dir_entry.isDirectory });
                     o_fsnode.n_id = o_fsnode__created.n_id;
                 }
                 if (o_dir_entry.isDirectory && b_recursive) {
@@ -65,6 +65,9 @@ let f_a_o_fsnode = async function(
 
 
 
+// WARNING: the following deno_copy_file, deno_stat, deno_mkdir handlers expose raw Deno APIs
+// to any connected WebSocket client with arbitrary arguments. Fine for local dev use,
+// but must be restricted or removed before any network-exposed deployment.
 o_wsmsg__deno_copy_file.f_v_server_implementation = function(o_wsmsg){
     let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
     return Deno.copyFile(...a_v_arg);
@@ -83,7 +86,7 @@ o_wsmsg__f_v_crud__indb.f_v_server_implementation = function(o_wsmsg){
 }
 o_wsmsg__f_delete_table_data.f_v_server_implementation = function(o_wsmsg){
     let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
-    return f_delete_table_data(...a_v_arg);
+    return f_db_delete_table_data(...a_v_arg);
 }
 o_wsmsg__f_a_o_fsnode.f_v_server_implementation = function(o_wsmsg){
     let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];

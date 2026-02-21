@@ -11,16 +11,16 @@ import {
 let a_o_data_default = [
     {
         o_student: {
-            name: 'Alice',
-            o_course: {name: 'Math 101'}
+            s_name: 'Alice',
+            o_course: {s_name: 'Math 101'}
         },
     },
     {
         o_student: {
-            name: 'Bob',
-            o_course: {name: 'Math 101'}
+            s_name: 'Bob',
+            o_course: {s_name: 'Math 101'}
         }
-    }, 
+    },
     {
         o_keyvalpair: {
             s_key: 's_path_absolute__filebrowser',
@@ -29,9 +29,9 @@ let a_o_data_default = [
     }
 ]
 // expected result in db:
-// o_student1 = {n_id: 1, name: 'Alice'}
-// o_student2 = {n_id: 2, name: 'Bob'}
-// o_course1 = {n_id: 1, name: 'Math 101'}
+// o_student1 = {n_id: 1, s_name: 'Alice'}
+// o_student2 = {n_id: 2, s_name: 'Bob'}
+// o_course1 = {n_id: 1, s_name: 'Math 101'}
 // o_course_o_student1 = {n_id: 1, n_o_student_n_id: 1, n_o_course_n_id: 1}
 // o_course_o_student2 = {n_id: 2, n_o_student_n_id: 2, n_o_course_n_id: 1}
 

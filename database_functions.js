@@ -170,23 +170,8 @@ let f_v_crud__indb = function(
     return v_return;
 };
 
-let f_v_read_or_create_byid__fromdb = async function(o_moel, o_instance){
-    if(!o_model_instance[s_name_prop_id]) throw new Error(`id property (${s_name_prop_id}) is required for read_or_create_byid`);
-
-    let o_instance__fromdb = f_v_crud__indb('read', o_model, {
-        [s_name_prop_id]: o_model_instance[s_name_prop_id],
-    })[0];
-
-    if(o_instance__fromdb) return o_instance__fromdb;
-
-    return f_v_crud__indb('create', o_model, o_instance);
-
-}
-
-
 export {
     f_init_db,
     f_v_crud__indb,
     f_db_delete_table_data,
-    f_v_read_or_create_byid__fromdb
 };

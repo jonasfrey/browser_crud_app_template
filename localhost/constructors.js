@@ -100,7 +100,7 @@ let o_model__o_student = f_o_model({
     s_name: 'o_student',
     a_o_property: [
         f_o_model_prop__default_id(s_name_prop_id),
-        f_o_property('name', 'string', (s)=>{return s!==''}),
+        f_o_property('s_name', 'string', (s)=>{return s!==''}),
         f_o_model_prop__timestamp_default(s_name_prop_ts_created),
         f_o_model_prop__timestamp_default(s_name_prop_ts_updated),
     ]
@@ -110,7 +110,7 @@ let o_model__o_course = f_o_model({
     s_name: 'o_course',
     a_o_property: [
         f_o_model_prop__default_id(s_name_prop_id),
-        f_o_property('name', 'string', (s)=>{return s!==''}),
+        f_o_property('s_name', 'string', (s)=>{return s!==''}),
         f_o_model_prop__timestamp_default(s_name_prop_ts_created),
         f_o_model_prop__timestamp_default(s_name_prop_ts_updated),
     ]
@@ -167,12 +167,6 @@ let o_model__o_keyvalpair = f_o_model({
 
 
 
-// console.log("Basic message");
-// console.error("Error message");
-// console.warn("Warning message");
-// console.info("Info message");
-// console.debug("Debug message");
-// console.table([{name: "John", age: 30}]);
 let s_o_logmsg_s_type__log = 'log';
 let s_o_logmsg_s_type__error = 'error';
 let s_o_logmsg_s_type__warn = 'warn';

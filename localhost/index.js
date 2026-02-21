@@ -15,7 +15,7 @@ import {
 
 import {
     f_o_html_from_o_js,
-} from "https://deno.land/x/handyhelpers@5.4.2/mod.js"
+} from "./lib/handyhelpers.js"
 import { o_component__data } from './o_component__data.js';
 import { o_component__filebrowser } from './o_component__filebrowser.js';
 
@@ -38,14 +38,16 @@ let o_state = reactive({
         },
     ],
     a_o_model,
-    a_o_course: [],
-    a_o_student: [],
-    o_course_o_student: [],
     a_o_toast: [
         f_o_logmsg('Welcome to the app!', false, true, 'success', Date.now(), 5000),
     ],
     n_ts_ms_now: Date.now(),
 });
+
+// auto-derive reactive keys for each model table so Vue tracks them before the server sends data
+for (let o_model of a_o_model) {
+    o_state[f_s_name_table__from_o_model(o_model)] = [];
+}
 
 let o_socket = null;
 let a_f_handler = [];
@@ -59,12 +61,19 @@ let f_register_handler = function(f_handler) {
     };
 };
 
+let n_ms__wsmsg_timeout = 10000;
+
 let f_send_wsmsg_with_response = async function(o_wsmsg){
     return new Promise(function(resolve, reject) {
+        let n_id__timeout = setTimeout(function(){
+            f_unregister();
+            reject(new Error(`wsmsg '${o_wsmsg.s_name}' timed out after ${n_ms__wsmsg_timeout}ms (uuid: ${o_wsmsg.s_uuid})`));
+        }, n_ms__wsmsg_timeout);
         let f_handler_response = function(o_wsmsg2){
             if(o_wsmsg2.s_uuid === o_wsmsg.s_uuid){
-                resolve(o_wsmsg2);
+                clearTimeout(n_id__timeout);
                 f_unregister();
+                resolve(o_wsmsg2);
             }
         }
         let f_unregister = f_register_handler(f_handler_response);
@@ -208,8 +217,12 @@ o_app.use(o_router);
 
 o_app.mount('#app');
 
+let f_o_socket = function() {
+    return o_socket;
+};
+
 export {
-    o_state, 
-    o_socket,
+    o_state,
+    f_o_socket,
     f_send_wsmsg_with_response
 }

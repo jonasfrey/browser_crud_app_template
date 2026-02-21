@@ -1,10 +1,10 @@
 // Copyright (C) [2026] [Jonas Immanuel Frey] - Licensed under GPLv2. See LICENSE file for details.
 
-import { f_send_wsmsg_with_response, o_socket, o_state } from './index.js';
+import { f_send_wsmsg_with_response, o_state } from './index.js';
 
 import {
     f_o_html_from_o_js,
-} from "https://deno.land/x/handyhelpers@5.4.2/mod.js"
+} from "./lib/handyhelpers.js"
 
 import {
     a_o_model,
@@ -276,7 +276,6 @@ let o_component__data = {
         },
     },
     created: function() {
-        console.log(o_state.a_o_model)
     },
     beforeUnmount: function() {
     },
