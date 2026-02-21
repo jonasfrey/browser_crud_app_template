@@ -2,7 +2,10 @@
   "name": "@apn/websersocketgui",
   "version": "0.1.0",
   "license": "MIT",
-  "exports": "./exports.js",
+  "exports": {
+    ".": "./exports.js",
+    "./init": "./init.js"
+  },
   "publish": {
     "exclude": [
       "AI_responses_summaries.md",
