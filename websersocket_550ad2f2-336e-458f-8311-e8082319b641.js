@@ -31,7 +31,7 @@ let o_state = {}
 f_init_db();
 
 let n_port = parseInt(Deno.env.get('PORT') ?? '8000');
-let s_dir__static = Deno.env.get('STATIC_DIR') ?? './webserved_dir';
+let s_dir__static = Deno.env.get('STATIC_DIR') ?? './localhost';
 
 let f_s_content_type = function(s_path) {
     if (s_path.endsWith('.html')) return 'text/html';
