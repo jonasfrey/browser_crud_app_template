@@ -15,6 +15,7 @@ let s_url__package = new URL('.', import.meta.url);
 
 let f_s_read_package_file = async function(s_relative_path) {
     let o_url = new URL(s_relative_path, s_url__package);
+    console.log(o_url.href);
     let o_response = await fetch(o_url);
     if (!o_response.ok) {
         throw new Error(`failed to read: ${s_relative_path} (${o_response.status})`);
