@@ -1,7 +1,7 @@
 // Copyright (C) [2026] [Jonas Immanuel Frey] - Licensed under GPLv2. See LICENSE file for details.
 
-import { createApp, reactive, markRaw } from 'vue';
-import { createRouter, createWebHashHistory } from 'vue-router';
+import { createApp, reactive, markRaw } from './lib/vue.esm-browser.js';
+import { createRouter, createWebHashHistory } from './lib/vue-router.esm-browser.js';
 import {
     a_o_model,
     f_s_name_table__from_o_model,

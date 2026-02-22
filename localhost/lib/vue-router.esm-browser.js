@@ -3,8 +3,8 @@
  * (c) 2025 Eduardo San Martin Morote
  * @license MIT
  */
-import { computed, defineComponent, getCurrentInstance, h, inject, nextTick, onActivated, onDeactivated, onUnmounted, provide, reactive, ref, shallowReactive, shallowRef, unref, watch, watchEffect } from "vue";
-import { setupDevtoolsPlugin } from "@vue/devtools-api";
+import { computed, defineComponent, getCurrentInstance, h, inject, nextTick, onActivated, onDeactivated, onUnmounted, provide, reactive, ref, shallowReactive, shallowRef, unref, watch, watchEffect } from "./vue.esm-browser.js";
+import { setupDevtoolsPlugin } from "./vue-devtools-api-stub.js";
 
 //#region src/utils/env.ts
 const isBrowser = typeof document !== "undefined";

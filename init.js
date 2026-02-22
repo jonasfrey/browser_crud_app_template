@@ -129,15 +129,6 @@ let f_s_generate__index_html = function() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App</title>
     <link rel="stylesheet" href="index.css">
-    <script type="importmap">
-    {
-        "imports": {
-            "vue": "./lib/vue.esm-browser.js",
-            "vue-router": "./lib/vue-router.esm-browser.js",
-            "@vue/devtools-api": "./lib/vue-devtools-api-stub.js"
-        }
-    }
-    </script>
 </head>
 <body>
     <div id="app"></div>
