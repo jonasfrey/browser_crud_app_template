@@ -6,28 +6,10 @@ import {
     f_s_name_foreign_key__from_o_model,
     f_s_name_table__from_o_model,
     o_model__o_keyvalpair,
+    a_o_data_default
 } from "./localhost/constructors.js";
 
-let a_o_data_default = [
-    {
-        o_student: {
-            s_name: 'Alice',
-            o_course: {s_name: 'Math 101'}
-        },
-    },
-    {
-        o_student: {
-            s_name: 'Bob',
-            o_course: {s_name: 'Math 101'}
-        }
-    },
-    {
-        o_keyvalpair: {
-            s_key: 's_path_absolute__filebrowser',
-            s_value: '/home'
-        }
-    }
-]
+
 // expected result in db:
 // o_student1 = {n_id: 1, s_name: 'Alice'}
 // o_student2 = {n_id: 2, s_name: 'Bob'}

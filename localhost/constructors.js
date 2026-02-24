@@ -83,6 +83,37 @@ let f_o_model__from_s_name_table = function(s_name_table) {
     });
 };
 
+let o_course__math101 = {
+    s_name: 'Math 101'
+}
+let o_course__cs101 = {
+    s_name: 'CS 101'
+}
+let o_student__gretel = {
+    s_name: 'Gretel',
+    o_course: o_course__cs101
+}
+let o_student__olaf = {
+    s_name: 'Olaf',
+    o_course: o_course__math101
+}
+
+let a_o_data_default = [
+    {o_student: o_student__gretel},
+    {o_student: o_student__olaf},
+    {
+        o_student: {
+            s_name: "Daria", 
+            o_course: o_course__math101
+        }
+    },
+    {
+        o_keyvalpair: {
+            s_key: 's_path_absolute__filebrowser',
+            s_value: '/home'
+        }
+    }
+]
 
 
 let f_o_model_instance = function(
@@ -301,5 +332,6 @@ export {
     s_o_logmsg_s_type__warn,
     s_o_logmsg_s_type__info,
     s_o_logmsg_s_type__debug,
-    s_o_logmsg_s_type__table
+    s_o_logmsg_s_type__table,
+    a_o_data_default
 }

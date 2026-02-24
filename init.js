@@ -101,7 +101,8 @@ let f_s_generate__deno_json = function(s_uuid) {
         },
         "tasks": {
             "run": `B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_${s_uuid}.js`,
-            "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js"
+            "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js",
+            "uninit": "deno run --allow-read --allow-write --allow-env --env uninit.js"
         }
     }, null, 4) + '\n';
 };
