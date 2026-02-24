@@ -1,72 +1,31 @@
 # CRUD template
 
-A minimal boilerplate for a browser-based CRUD application.
-**Stack:** Deno backend · SQLite database · Vue 3 frontend · WebSocket communication
-
----
+Deno · SQLite · Vue 3 · WebSocket
 
 ## Quick start
 
-Create a new project directory, then initialize it:
 ```
 mkdir project_name && cd project_name
 deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui/init'; await f_init_project();"
-```
-
-Then start the server:
-```
 deno task run
 ```
 
-Open `http://localhost:8000` in your browser.
+Open `http://localhost:8000`
 
----
+## Tasks
 
-## Environment variables
+- `deno task run` — start the server
+- `deno task uninit` — delete database and reset project data
 
-| Variable     | Default                  | Description                         |
-|--------------|--------------------------|-------------------------------------|
-| `PORT`       | `8000`                   | HTTP server port                    |
-| `DB_PATH`    | `./.gitignored/app.db`   | Path to the SQLite database file    |
-| `STATIC_DIR` | `./localhost`            | Directory served as static frontend |
 
----
 
-## Project structure
+# APN
+This project is coded entirely with APN Abstract Prefix Notation. To get a better understanding you can read the paper https://zenodo.org/records/18743663
 
-```
-/
-├── websersocket_<uuid>.js    # Deno HTTP server, WebSocket handler, static file serving
-├── database_functions.js     # SQLite CRUD operations
-├── default_data.js           # Default data seeding (runs on startup)
-├── runtimedata.js            # Runtime paths and OS info
-├── functions.js              # Backend utility functions (add yours here)
-├── deno.json                 # Task definitions
-├── .env                      # Local config (gitignored)
-├── .env.example              # Committed env template
-└── localhost/                # Files served to the browser
-    ├── index.html            # HTML entry point
-    ├── index.js              # Vue 3 app, routing, WebSocket client
-    ├── index.css             # Styling
-    ├── constructors.js       # Model definitions, wsmsg list, factory functions
-    ├── o_component__data.js  # CRUD data management component (full Create/Read/Update/Delete)
-    ├── functions.js          # Frontend utility functions (add yours here)
-    └── lib/
-        ├── vue.esm-browser.js
-        └── vue-router.esm-browser.js
-```
+## Remember
+This project exposes many functionalities of the 'server' which is essentaly the computer . The webapplication GUI 'only' serves as a front end for the application. However this can be extended in a way to make it a sturdy and secure webapplication. The fundamentals however are here to give full access to the computer. This is not unsecure, it is just a solid base. 
+Remember: 
+Just because a system is unclear and obfuscated, it does not mean it is secure. security through obscurity is not good. 
 
----
 
-## Adding a new model
-
-1. Define it in [localhost/constructors.js](localhost/constructors.js) using `f_o_model(...)`.
-2. Add it to the `a_o_model` array — the database table is created automatically on startup.
-3. Add its data key to `o_state` in [localhost/index.js](localhost/index.js) so the frontend receives and stores it.
-
----
-
-## Naming conventions
-
-All code follows strict naming conventions documented in [CLAUDE.md](CLAUDE.md).
-Key rules: type prefix on every variable (`n_`, `s_`, `b_`, `o_`, `a_`, `f_`), no plural words, double-underscore for grouping variants.
+Have Fun !
