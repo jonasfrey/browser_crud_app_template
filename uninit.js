@@ -24,6 +24,7 @@ let f_uninit_project = async function() {
     console.log('this will:');
     console.log(`  - delete the database file: ${s_path_database}`);
     console.log('  - delete the .gitignored/ directory');
+    console.log('  - delete start.desktop (has hardcoded paths, regenerated on init)');
     console.log('');
 
     // ── double confirmation ──
@@ -57,11 +58,13 @@ let f_uninit_project = async function() {
         console.log('  skipped: .gitignored/ (not found)');
     }
 
-    // ── project-specific uninitialization ──
-    // add additional cleanup logic here as needed, for example:
-    // - delete generated config files
-    // - reset external service state
-    // - clean up temp files
+    // ── delete start.desktop (contains hardcoded absolute paths) ──
+    if (await f_b_path_exists('./start.desktop')) {
+        await Deno.remove('./start.desktop');
+        console.log('  deleted: start.desktop');
+    } else {
+        console.log('  skipped: start.desktop (not found)');
+    }
 
     console.log('');
     console.log('project uninitialized successfully.');

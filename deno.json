@@ -13,8 +13,13 @@
     ]
   },
   "tasks": {
-    "run": "B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_550ad2f2-336e-458f-8311-e8082319b641.js",
+    "run": "B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-run --env websersocket_550ad2f2-336e-458f-8311-e8082319b641.js",
+    "stop": "pkill -f 'deno run.*websersocket_550ad2f2-336e-458f-8311-e8082319b641.js' || echo 'No running websersocket process found.'",
+    "restart": "deno task stop && deno task run",
     "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js",
     "uninit": "deno run --allow-read --allow-write --allow-env --env uninit.js"
+  },
+  "imports": {
+    "@std/fs": "jsr:@std/fs@^1.0.23"
   }
 }

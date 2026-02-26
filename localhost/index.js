@@ -42,6 +42,7 @@ let o_state = reactive({
         f_o_logmsg('Welcome to the app!', false, true, 'success', Date.now(), 5000),
     ],
     n_ts_ms_now: Date.now(),
+    b_utterance_muted: false,
 });
 
 // auto-derive reactive keys for each model table so Vue tracks them before the server sends data
@@ -200,6 +201,14 @@ let o_app = createApp({
                         }
                     ]
 
+                },
+                {
+                    s_tag: "button",
+                    class: "btn__utterance_mute",
+                    ':class': "{ muted: b_utterance_muted }",
+                    '@click': "b_utterance_muted = !b_utterance_muted",
+                    ':title': "b_utterance_muted ? 'Unmute utterances' : 'Mute utterances'",
+                    innerHTML: "{{ b_utterance_muted ? '&#128264;' : '&#128266;' }}",
                 }
         ]
     }

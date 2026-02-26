@@ -84,6 +84,8 @@ let o_set__skip = new Set([
     'CLAUDE.md',
     'improvements.md',
     'AI_responses_summaries.md',
+    'start.sh',
+    'start.desktop',
 ]);
 
 let f_b_should_skip = function(s_path) {
@@ -101,6 +103,8 @@ let f_s_generate__deno_json = function(s_uuid) {
         },
         "tasks": {
             "run": `B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_${s_uuid}.js`,
+            "stop": `pkill -f 'deno run.*websersocket_${s_uuid}.js' || echo 'No running websersocket process found.'`,
+            "restart": "deno task stop && deno task run",
             "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js",
             "uninit": "deno run --allow-read --allow-write --allow-env --env uninit.js"
         }
@@ -536,6 +540,75 @@ main, .content {
 `;
 };
 
+let f_s_generate__start_sh = function() {
+    return `#!/bin/bash
+# Copyright (C) 2026 Jonas Immanuel Frey - Licensed under GPLv2. See LICENSE file for details
+
+# Self-locate: cd to the directory containing this script
+cd "$(dirname "$(readlink -f "$0")")"
+
+# Read PORT from .env
+n_port=$(grep -E '^PORT=' .env 2>/dev/null | cut -d'=' -f2)
+n_port=\${n_port:-8000}
+
+s_url="http://localhost:\${n_port}"
+
+# Check if already running by testing the port
+if curl -s --max-time 2 "\${s_url}" > /dev/null 2>&1; then
+    # Already running, just open/focus browser
+    xdg-open "\${s_url}" > /dev/null 2>&1
+    exit 0
+fi
+
+# Ensure deno is on PATH (may not be when launched from .desktop file)
+export PATH="$HOME/.deno/bin:$PATH"
+
+if ! command -v deno > /dev/null 2>&1; then
+    notify-send "Web App" "deno not found. Please install deno first." 2>/dev/null
+    exit 1
+fi
+
+# Ensure log directory exists
+mkdir -p .gitignored
+
+# Start the server in the background, redirect output to a log file
+deno task run > .gitignored/server.log 2>&1 &
+n_pid=$!
+
+# Wait for the server to become ready (up to 15 seconds)
+for n_it in $(seq 1 15); do
+    # Check if process is still alive
+    if ! kill -0 "$n_pid" 2>/dev/null; then
+        notify-send "Web App" "Server crashed on startup. Check .gitignored/server.log" 2>/dev/null
+        exit 2
+    fi
+    if curl -s --max-time 1 "\${s_url}" > /dev/null 2>&1; then
+        xdg-open "\${s_url}" > /dev/null 2>&1
+        exit 0
+    fi
+    sleep 1
+done
+
+# If we get here, server didn't start in time
+notify-send "Web App" "Server failed to start within 15s. Check .gitignored/server.log" 2>/dev/null
+exit 2
+`;
+};
+
+let f_s_generate__start_desktop = function(s_path__target) {
+    return `[Desktop Entry]
+Type=Application
+Name=Web App
+Comment=Start the web application and open browser
+Exec=${s_path__target}/start.sh
+Path=${s_path__target}
+Icon=web-browser
+Terminal=false
+Categories=Development;
+StartupNotify=true
+`;
+};
+
 // ─── main init function ─────────────────────────────────────────────────────────
 
 let f_init_project = async function(s_path__target) {
@@ -636,6 +709,16 @@ let f_init_project = async function(s_path__target) {
 
     await f_write(`${s_path__target}/.gitignore`, f_s_generate__gitignore());
     console.log('  created: .gitignore');
+
+    // ── 6. generate start shortcut files ──
+
+    await f_write(`${s_path__target}/start.sh`, f_s_generate__start_sh());
+    await Deno.chmod(`${s_path__target}/start.sh`, 0o755);
+    console.log('  created: start.sh');
+
+    await f_write(`${s_path__target}/start.desktop`, f_s_generate__start_desktop(s_path__target));
+    await Deno.chmod(`${s_path__target}/start.desktop`, 0o755);
+    console.log('  created: start.desktop');
 
     // ── done ──
 

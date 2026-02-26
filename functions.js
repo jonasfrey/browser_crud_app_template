@@ -3,8 +3,8 @@
 // backend utility functions
 // add shared server-side helper functions here and import them where needed
 
-import { s_ds } from './runtimedata.js';
-import { a_o_wsmsg, f_o_model_instance, f_s_name_table__from_o_model, o_model__o_fsnode, o_wsmsg__deno_copy_file, o_wsmsg__deno_mkdir, o_wsmsg__deno_stat, o_wsmsg__f_a_o_fsnode, o_wsmsg__f_delete_table_data, o_wsmsg__f_v_crud__indb, o_wsmsg__logmsg, o_wsmsg__set_state_data } from './localhost/constructors.js';
+import { s_ds, s_root_dir } from './runtimedata.js';
+import { a_o_wsmsg, f_o_model_instance, f_s_name_table__from_o_model, o_model__o_fsnode, o_model__o_utterance, o_wsmsg__deno_copy_file, o_wsmsg__deno_mkdir, o_wsmsg__deno_stat, o_wsmsg__f_a_o_fsnode, o_wsmsg__f_delete_table_data, o_wsmsg__f_v_crud__indb, o_wsmsg__logmsg, o_wsmsg__set_state_data } from './localhost/constructors.js';
 import { f_v_crud__indb, f_db_delete_table_data } from './database_functions.js';
 
 let f_a_o_fsnode = async function(
@@ -103,6 +103,66 @@ o_wsmsg__set_state_data.f_v_server_implementation = function(o_wsmsg, o_wsmsg__e
     o_state[o_wsmsg.v_data.s_property] = o_wsmsg.v_data.value;
     return null;
 }
+let f_o_utterance = async function(s_text){
+    let s_uuid = Deno.env.get('S_UUID') ?? '';
+    let s_path__script = `${s_root_dir}${s_ds}f_o_utterance.py`;
+    // prefer venv python if it exists, fall back to system python3
+    let s_path__python = `${s_root_dir}${s_ds}venv${s_ds}bin${s_ds}python3`;
+    try { await Deno.stat(s_path__python); } catch { s_path__python = 'python3'; }
+    let a_s_cmd = [s_path__python, s_path__script, s_text, '--s-uuid', s_uuid];
+
+    let o_process = new Deno.Command(a_s_cmd[0], {
+        args: a_s_cmd.slice(1),
+        cwd: s_root_dir,
+        stdout: 'piped',
+        stderr: 'piped',
+    });
+    let o_output = await o_process.output();
+    let s_stdout = new TextDecoder().decode(o_output.stdout);
+    let s_stderr = new TextDecoder().decode(o_output.stderr);
+
+    if(o_output.code !== 0){
+        console.error('f_o_utterance python script failed:', s_stderr);
+        throw new Error(`f_o_utterance.py exited with code ${o_output.code}: ${s_stderr}`);
+    }
+
+    // parse IPC block from stdout
+    let s_tag__start = `${s_uuid}_start_json`;
+    let s_tag__end = `${s_uuid}_end_json`;
+    let n_idx__start = s_stdout.indexOf(s_tag__start);
+    let n_idx__end = s_stdout.indexOf(s_tag__end);
+
+    if(n_idx__start === -1 || n_idx__end === -1){
+        console.error('f_o_utterance: no IPC block found in stdout:\n', s_stdout);
+        throw new Error('f_o_utterance.py did not emit IPC json block');
+    }
+
+    let s_json = s_stdout.slice(n_idx__start + s_tag__start.length, n_idx__end).trim();
+    let o_ipc = JSON.parse(s_json);
+    // o_ipc: { s_text, s_path_absolute, s_name, n_bytes, s_model, n_ts_ms }
+
+    // create o_fsnode in db for the audio file
+    let s_name_table__fsnode = f_s_name_table__from_o_model(o_model__o_fsnode);
+    let o_fsnode = f_v_crud__indb('create', s_name_table__fsnode, {
+        s_path_absolute: o_ipc.s_path_absolute,
+        s_name: o_ipc.s_name,
+        n_bytes: o_ipc.n_bytes,
+        b_folder: false,
+    });
+
+    // create o_utterance in db linked to o_fsnode
+    let s_name_table__utterance = f_s_name_table__from_o_model(o_model__o_utterance);
+    let o_utterance = f_v_crud__indb('create', s_name_table__utterance, {
+        s_text: o_ipc.s_text,
+        n_o_fsnode_n_id: o_fsnode.n_id,
+    });
+
+    return {
+        o_utterance,
+        o_fsnode,
+    };
+};
+
 let f_v_result_from_o_wsmsg = async function(
     o_wsmsg,
     o_state
@@ -126,5 +186,6 @@ let f_v_result_from_o_wsmsg = async function(
 
 export {
     f_a_o_fsnode,
+    f_o_utterance,
     f_v_result_from_o_wsmsg
 };
