@@ -42,7 +42,7 @@ let o_state = reactive({
         f_o_logmsg('Welcome to the app!', false, true, 'success', Date.now(), 5000),
     ],
     n_ts_ms_now: Date.now(),
-    b_utterance_muted: false,
+    b_utterance_muted: true,
 });
 
 // auto-derive reactive keys for each model table so Vue tracks them before the server sends data
