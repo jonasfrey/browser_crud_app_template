@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2026 Jonas Immanuel Frey - Licensed under MIT. See LICENSE file for details
+# Copyright (C) 2026 Jonas Immanuel Frey - Licensed under GPLv2. See LICENSE file for details
 
 # Self-locate: cd to the directory containing this script
 cd "$(dirname "$(readlink -f "$0")")"

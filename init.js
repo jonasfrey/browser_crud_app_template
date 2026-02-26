@@ -615,6 +615,20 @@ let f_init_project = async function(s_path__target) {
     if (!s_path__target) {
         s_path__target = Deno.cwd();
     }
+
+    // guard: refuse to init inside the template source repo
+    try {
+        let s_deno_json = await Deno.readTextFile(`${s_path__target}/deno.json`);
+        let o_deno_json = JSON.parse(s_deno_json);
+        if (o_deno_json.name === '@apn/websersocketgui') {
+            console.error('ERROR: refusing to initialize — this directory is the template source repo.');
+            console.error('       run init in a new empty directory instead.');
+            Deno.exit(1);
+        }
+    } catch (_) {
+        // no deno.json or not parseable — that's fine, proceed
+    }
+
     console.log(`initializing project in: ${s_path__target}`);
 
     let s_uuid = crypto.randomUUID();

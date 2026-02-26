@@ -14,7 +14,7 @@ import {
     a_o_data_default,
 } from "./localhost/constructors.js";
 import { s_ds, s_root_dir } from "./runtimedata.js";
-import { ensureDir as f_ensure_dir } from "@std/fs";
+import { ensureDir as f_ensure_dir } from "jsr:@std/fs";
 
 
 let o_db = null;

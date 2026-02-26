@@ -1,10 +1,4 @@
-# database and secrets
-.gitignored/
 .env
-
-# python venv
-venv/
-
-# ai / planning
+.gitignored/
 AI_responses_summaries.md
 planning/
