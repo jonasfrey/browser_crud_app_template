@@ -9,7 +9,7 @@
 // Usage direct:
 //   deno run -A init.js [target_directory]    (defaults to cwd if omitted)
 
-let s_url__package = new URL('.', import.meta.url);
+let s_url__package = new URL('..', import.meta.url);
 
 // ─── helpers ────────────────────────────────────────────────────────────────────
 

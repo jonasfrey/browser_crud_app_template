@@ -1,6 +1,12 @@
 // Copyright (C) [2026] [Jonas Immanuel Frey] - Licensed under GPLv2. See LICENSE file for details.
 
-let s_root_dir = Deno.cwd();
+// derive project root from this file's location (serverside/ -> parent)
+let n_idx__last_sep = Math.max(
+    import.meta.dirname.lastIndexOf('/'),
+    import.meta.dirname.lastIndexOf('\\')
+);
+let s_root_dir = import.meta.dirname.slice(0, n_idx__last_sep);
+
 // directory separator
 let s_ds = '/';
 // if windows is detected as platform, change to backslash
