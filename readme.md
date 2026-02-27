@@ -6,7 +6,7 @@ Deno · SQLite · Vue 3 · WebSocket
 
 ```
 mkdir project_name && cd project_name
-deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui/init'; await f_init_project();"
+deno eval "import { f_init_project } from 'jsr:@apn/websersocketgui@{version}/init'; await f_init_project();"
 deno task run
 ```
 

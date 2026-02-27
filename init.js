@@ -53,19 +53,43 @@ let f_a_s_path__from_jsr = async function() {
     return Object.keys(o_meta.manifest).map(s => s.replace(/^\//, ''));
 };
 
+// parse .gitignore into sets of ignored directory names and file names
+let f_o_gitignore = async function(s_dir) {
+    let o_set__dir = new Set();
+    let o_set__file = new Set();
+    try {
+        let s_content = await Deno.readTextFile(`${s_dir}/.gitignore`);
+        for (let s_line of s_content.split('\n')) {
+            s_line = s_line.trim();
+            if (!s_line || s_line.startsWith('#')) continue;
+            if (s_line.endsWith('/')) {
+                o_set__dir.add(s_line.slice(0, -1));
+            } else {
+                o_set__file.add(s_line);
+            }
+        }
+    } catch (_) {
+        // no .gitignore — nothing to ignore
+    }
+    return { o_set__dir, o_set__file };
+};
+
 // discover files by walking the local filesystem
-let f_a_s_path__from_local = async function(s_dir, s_prefix) {
+let f_a_s_path__from_local = async function(s_dir, s_prefix, o_gitignore) {
+    if (!o_gitignore) {
+        o_gitignore = await f_o_gitignore(s_dir);
+    }
     let a_s_path = [];
     for await (let o_entry of Deno.readDir(s_dir)) {
         let s_rel = s_prefix ? `${s_prefix}/${o_entry.name}` : o_entry.name;
         if (o_entry.isDirectory) {
             if (o_entry.name.startsWith('.')) continue;
-            if (o_entry.name === 'planning') continue;
-            if (o_entry.name === 'node_modules') continue;
+            if (o_gitignore.o_set__dir.has(o_entry.name)) continue;
             a_s_path = a_s_path.concat(
-                await f_a_s_path__from_local(`${s_dir}/${o_entry.name}`, s_rel)
+                await f_a_s_path__from_local(`${s_dir}/${o_entry.name}`, s_rel, o_gitignore)
             );
         } else if (o_entry.isFile) {
+            if (o_gitignore.o_set__file.has(o_entry.name)) continue;
             a_s_path.push(s_rel);
         }
     }
@@ -122,7 +146,10 @@ let f_s_generate__gitignore = function() {
     return '.env\n' +
         '.gitignored/\n' +
         'AI_responses_summaries.md\n' +
-        'planning/\n';
+        'planning/\n' +
+        'venv/\n' +
+        '__pycache__/\n' +
+        'node_modules/\n';
 };
 
 // JSR only serves .js/.ts — HTML and CSS need inline fallback generators
