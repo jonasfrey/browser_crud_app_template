@@ -409,6 +409,88 @@ main, .content {
     box-shadow: 0 4px 12px rgba(139, 116, 234, 0.25);
 }
 
+/* Reload button (in model selector bar) */
+.btn__reload {
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #a0aec0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.btn__reload:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Delete all data button */
+.btn__clear_table {
+    padding: 0.45rem 1rem;
+    background: rgba(155, 44, 44, 0.2);
+    color: #fc8181;
+    border: 1px solid rgba(252, 129, 129, 0.25);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 0.75rem;
+}
+
+.btn__clear_table:hover {
+    background: rgba(155, 44, 44, 0.35);
+    border-color: rgba(252, 129, 129, 0.45);
+    transform: translateY(-1px);
+}
+
+/* Table action buttons */
+.td__actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.td__actions button {
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.06);
+    color: #a0aec0;
+}
+
+.td__actions button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+}
+
+/* Table inline edit inputs */
+.a_o_model_data_table td input {
+    padding: 0.35rem 0.6rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(139, 116, 234, 0.4);
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.a_o_model_data_table td input:focus {
+    border-color: rgba(139, 116, 234, 0.7);
+    box-shadow: 0 0 0 2px rgba(139, 116, 234, 0.15);
+}
+
 /* Toast styles */
 .a_o_toast {
     position: fixed;
