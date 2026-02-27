@@ -13,7 +13,7 @@ import {
     s_name_prop_ts_updated,
     a_o_data_default,
 } from "../localhost/constructors.js";
-import { s_ds, s_root_dir, s_path__database, s_path__model_constructor_cli_language } from "./runtimedata.js";
+import { s_ds, s_path__database, s_path__model_constructor_cli_language } from "./runtimedata.js";
 import { ensureDir as f_ensure_dir } from "@std/fs";
 
 
@@ -59,7 +59,6 @@ let f_init_db = async function(s_path_db = s_path__database) {
     f_ensure_default_data();
     return o_db;
 };
-
 
 
 // generic db CRUD

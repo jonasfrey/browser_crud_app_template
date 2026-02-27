@@ -6,6 +6,7 @@ import {
     f_v_crud__indb,
 } from "./serverside/database_functions.js";
 import { f_a_o_fsnode, f_o_uttdatainfo__read_or_create, f_v_result_from_o_wsmsg } from "./serverside/functions.js";
+import { f_init_python } from "./serverside/cli_functions.js";
 import {
     a_o_model,
     f_o_model__from_s_name_table,
@@ -33,6 +34,7 @@ import {
 let o_state = {}
 
 await f_init_db();
+await f_init_python();
 await f_generate_model_constructors_for_cli_languages();
 
 

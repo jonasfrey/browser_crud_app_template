@@ -20,6 +20,8 @@ let s_dir__static = Deno.env.get('STATIC_DIR') ?? './localhost';
 let s_path__database = Deno.env.get('DB_PATH') ?? './.gitignored/app.db';
 let s_path__model_constructor_cli_language = Deno.env.get('MODEL_CONSTRUCTORS_CLI_LANGUAGES_PATH') ?? './.gitignored/model_constructors/';
 let s_uuid = Deno.env.get('S_UUID') ?? '';
+let s_bin__python = Deno.env.get('BIN_PYTHON') ?? 'python3';
+let s_path__venv = Deno.env.get('PATH_VENV') ?? './venv';
 
 export {
     s_root_dir,
@@ -28,5 +30,7 @@ export {
     s_dir__static,
     s_path__database,
     s_path__model_constructor_cli_language,
-    s_uuid
+    s_uuid,
+    s_bin__python,
+    s_path__venv,
 }

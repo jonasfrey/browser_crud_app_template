@@ -57,6 +57,12 @@ export {
     f_db_delete_table_data,
 } from './serverside/database_functions.js';
 
+// server only — CLI subprocess functions (python, pip, etc.)
+export {
+    f_init_python,
+    f_o_uttdatainfo,
+} from './serverside/cli_functions.js';
+
 // server only — wsmsg server implementations + filesystem scanner
 // importing this file attaches f_v_server_implementation to all o_wsmsg definitions
 export {
