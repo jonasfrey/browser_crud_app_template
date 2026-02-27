@@ -99,7 +99,7 @@ let f_a_s_path__from_local = async function(s_dir, s_prefix, o_gitignore) {
 // ─── skip logic ─────────────────────────────────────────────────────────────────
 
 let o_set__skip = new Set([
-    'init.js',
+    'serverside/init.js',
     'exports.js',
     'deno.json',
     'deno.lock',
@@ -123,14 +123,14 @@ let f_b_should_skip = function(s_path) {
 let f_s_generate__deno_json = function(s_uuid) {
     return JSON.stringify({
         "imports": {
-            "@apn/websersocketgui": "jsr:@apn/websersocketgui@^0.1.0"
+            "@apn/websersocketgui": "jsr:@apn/websersocketgui@^0.2.0"
         },
         "tasks": {
-            "run": `B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --env websersocket_${s_uuid}.js`,
+            "run": `B_DENO_TASK=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-run --env websersocket_${s_uuid}.js`,
             "stop": `pkill -f 'deno run.*websersocket_${s_uuid}.js' || echo 'No running websersocket process found.'`,
             "restart": "deno task stop && deno task run",
-            "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi function_testings.js",
-            "uninit": "deno run --allow-read --allow-write --allow-env --env uninit.js"
+            "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi serverside/function_testings.js",
+            "uninit": "deno run --allow-read --allow-write --allow-env --env serverside/uninit.js"
         }
     }, null, 4) + '\n';
 };
