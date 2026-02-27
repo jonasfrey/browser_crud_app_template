@@ -4,8 +4,8 @@ import {
     f_generate_model_constructors_for_cli_languages,
     f_init_db,
     f_v_crud__indb,
-} from "./database_functions.js";
-import { f_a_o_fsnode, f_o_utterance_data__read_or_create, f_v_result_from_o_wsmsg } from "./functions.js";
+} from "./serverside/database_functions.js";
+import { f_a_o_fsnode, f_o_uttdatainfo__read_or_create, f_v_result_from_o_wsmsg } from "./serverside/functions.js";
 import {
     a_o_model,
     f_o_model__from_s_name_table,
@@ -26,15 +26,15 @@ import {
 import {
     s_ds,
     s_root_dir,
-} from "./runtimedata.js";
+    n_port,
+    s_dir__static,
+} from "./serverside/runtimedata.js";
 
 let o_state = {}
 
 await f_init_db();
 await f_generate_model_constructors_for_cli_languages();
 
-let n_port = parseInt(Deno.env.get('PORT') ?? '8000');
-let s_dir__static = Deno.env.get('STATIC_DIR') ?? './localhost';
 
 let f_s_content_type = function(s_path) {
     if (s_path.endsWith('.html')) return 'text/html';
@@ -210,7 +210,7 @@ let f_handler = async function(o_request, o_conninfo) {
                 let o_utterance_data = null;
                 try {
                     b_utterance_generating = true;
-                    o_utterance_data = await f_o_utterance_data__read_or_create(s_msg);
+                    o_utterance_data = await f_o_uttdatainfo__read_or_create(s_msg);
                 } catch(o_err) {
                     console.error('utterance generation failed:', o_err.message);
                 } finally {

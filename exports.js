@@ -55,20 +55,25 @@ export {
     f_init_db,
     f_v_crud__indb,
     f_db_delete_table_data,
-} from './database_functions.js';
+} from './serverside/database_functions.js';
 
 // server only — wsmsg server implementations + filesystem scanner
 // importing this file attaches f_v_server_implementation to all o_wsmsg definitions
 export {
     f_a_o_fsnode,
     f_v_result_from_o_wsmsg,
-} from './functions.js';
+} from './serverside/functions.js';
 
 // server only — runtime environment
 export {
     s_root_dir,
     s_ds,
-} from './runtimedata.js';
+    n_port,
+    s_dir__static,
+    s_path__database,
+    s_path__model_constructor_cli_language,
+    s_uuid,
+} from './serverside/runtimedata.js';
 
 // client utility
 export {

@@ -18,7 +18,13 @@ Open `http://localhost:8000`
 - `deno task uninit` — delete database and reset project data
 
 
-
+## project structure 
+root 
+    serverside
+        basically all server side code goes here
+    localhost
+        all data that is accessable on the website client
+    
 # APN
 This project is coded entirely with APN Abstract Prefix Notation. To get a better understanding you can read the paper https://zenodo.org/records/18743663
 

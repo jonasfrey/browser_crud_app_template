@@ -12,17 +12,14 @@ import {
     s_name_prop_ts_created,
     s_name_prop_ts_updated,
     a_o_data_default,
-} from "./localhost/constructors.js";
-import { s_ds, s_root_dir } from "./runtimedata.js";
+} from "../localhost/constructors.js";
+import { s_ds, s_root_dir, s_path__database, s_path__model_constructor_cli_language } from "./runtimedata.js";
 import { ensureDir as f_ensure_dir } from "@std/fs";
 
 
 let o_db = null;
 
-let s_path_database = Deno.env.get('DB_PATH') ?? './.gitignored/app.db';
-let s_path_model_constructors_cli_languages = Deno.env.get('MODEL_CONSTRUCTORS_CLI_LANGUAGES_PATH') ?? './.gitignored/model_constructors/';
-
-let f_init_db = async function(s_path_db = s_path_database) {
+let f_init_db = async function(s_path_db = s_path__database) {
     //make sure the folder where db should be stored exists
     await Deno.mkdir(s_path_db.slice(0, s_path_db.lastIndexOf(s_ds)), { recursive: true });
 
@@ -315,11 +312,9 @@ let f_s_python__model_constructors = function(){
 
 let f_generate_model_constructors_for_cli_languages = async function(){
     let s_python = f_s_python__model_constructors();
-    console.log(s_python)
-    console.log(s_path_model_constructors_cli_languages + 'model_constructors.py')
-    await f_ensure_dir(s_path_model_constructors_cli_languages);
+    await f_ensure_dir(s_path__model_constructor_cli_language);
         await Deno.writeTextFile(
-        s_path_model_constructors_cli_languages + 'model_constructors.py',
+        s_path__model_constructor_cli_language + 'model_constructors.py',
         s_python
     );
 }

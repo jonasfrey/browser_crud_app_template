@@ -6,7 +6,7 @@
 // Usage:
 //   deno task uninit
 
-let s_path_database = Deno.env.get('DB_PATH') ?? './.gitignored/app.db';
+import { s_path__database } from './runtimedata.js';
 
 let f_b_path_exists = async function(s_path) {
     try {
@@ -22,7 +22,7 @@ let f_uninit_project = async function() {
     console.log('=== project uninitialization ===');
     console.log('');
     console.log('this will:');
-    console.log(`  - delete the database file: ${s_path_database}`);
+    console.log(`  - delete the database file: ${s_path__database}`);
     console.log('  - delete the .gitignored/ directory');
     console.log('  - delete start.desktop (has hardcoded paths, regenerated on init)');
     console.log('');
@@ -43,11 +43,11 @@ let f_uninit_project = async function() {
     console.log('');
 
     // ── delete database file ──
-    if (await f_b_path_exists(s_path_database)) {
-        await Deno.remove(s_path_database);
-        console.log(`  deleted: ${s_path_database}`);
+    if (await f_b_path_exists(s_path__database)) {
+        await Deno.remove(s_path__database);
+        console.log(`  deleted: ${s_path__database}`);
     } else {
-        console.log(`  skipped: ${s_path_database} (not found)`);
+        console.log(`  skipped: ${s_path__database} (not found)`);
     }
 
     // ── delete .gitignored directory ──

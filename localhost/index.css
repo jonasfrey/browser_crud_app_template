@@ -47,7 +47,7 @@ body {
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    text-transform: capitalize;
+    text-transform: none;
 }
 
 .nav a:hover {
@@ -97,7 +97,7 @@ main, .content {
     background: rgba(255, 255, 255, 0.04);
     color: #a0aec0;
     font-weight: 600;
-    text-transform: capitalize;
+    text-transform: none;
     letter-spacing: 0.02em;
     position: sticky;
     top: 0;
@@ -139,7 +139,7 @@ main, .content {
     font-weight: 500;
     transition: all 0.2s ease;
     user-select: none;
-    text-transform: capitalize;
+    text-transform: none;
 }
 
 .a_o_model .o_model:hover {
@@ -173,7 +173,7 @@ main, .content {
     font-weight: 600;
     color: #a0aec0;
     white-space: nowrap;
-    text-transform: capitalize;
+    text-transform: none;
 }
 
 .o_form__create .a_o_input {

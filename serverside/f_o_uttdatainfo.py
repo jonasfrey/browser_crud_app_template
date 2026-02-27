@@ -62,15 +62,27 @@ except ImportError:
     print("  pip install pyttsx3")
     sys.exit(1)
 
+s_path__model_constructor = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', '.gitignored', 'model_constructors'
+)
+sys.path.insert(0, s_path__model_constructor)
+try:
+    from model_constructors import f_o_utterance, f_o_fsnode
+except ImportError:
+    print("Missing model_constructors.py in .gitignored/model_constructors/")
+    print("Run the model constructor generator first.")
+    sys.exit(1)
+
 # --- 2. argument parsing & summary ---
 
 s_path__script_dir = os.path.dirname(os.path.abspath(__file__))
-s_path__env = os.path.join(s_path__script_dir, '.env')
+s_path__root_dir = os.path.dirname(s_path__script_dir)
+s_path__env = os.path.join(s_path__root_dir, '.env')
 if os.path.exists(s_path__env):
     load_dotenv(s_path__env)
 
 s_uuid__default = os.environ.get('S_UUID', '')
-s_path_dir__output_default = os.path.join(s_path__script_dir, '.gitignored', 'audio')
+s_path_dir__output_default = os.path.join(s_path__root_dir, '.gitignored', 'audio')
 
 o_parser = argparse.ArgumentParser(
     description="Generate a TTS audio file from text using pyttsx3 (espeak). Outputs file metadata via IPC."
@@ -127,27 +139,53 @@ n_ts_ms = int(time.time() * 1000)
 s_name__file = f"utterance_{n_ts_ms}.wav"
 s_path_absolute__file = os.path.join(s_path_dir__output, s_name__file)
 
+n_its__retry = 3
+b_synthesized = False
 o_timer__synthesize = f_time_start("synthesize_audio")
 f_log(f"Synthesizing: \"{s_text[:80]}{'...' if len(s_text) > 80 else ''}\"")
-o_engine.save_to_file(s_text, s_path_absolute__file)
-o_engine.runAndWait()
+for n_it__retry in range(n_its__retry):
+    o_engine.save_to_file(s_text, s_path_absolute__file)
+    o_engine.runAndWait()
+    if os.path.exists(s_path_absolute__file) and os.path.getsize(s_path_absolute__file) > 0:
+        b_synthesized = True
+        break
+    f_log(f"Attempt {n_it__retry + 1}/{n_its__retry}: file not created, reinitializing engine...")
+    o_engine.stop()
+    o_engine = pyttsx3.init()
+    o_engine.setProperty('rate', n_rate)
 f_time_end(o_timer__synthesize)
+
+if not b_synthesized:
+    print(f"Error: pyttsx3 failed to create audio file after {n_its__retry} attempts.", file=sys.stderr)
+    sys.exit(2)
 
 n_bytes = os.path.getsize(s_path_absolute__file)
 f_log(f"Audio saved: {s_path_absolute__file} ({n_bytes} bytes)")
 
 # --- 4. machine-readable output (IPC protocol) ---
 
-o_output = {
-    "s_text": s_text,
-    "s_path_absolute": s_path_absolute__file,
-    "s_name": s_name__file,
-    "n_bytes": n_bytes,
-    "n_ts_ms": n_ts_ms,
+o_fsnode = f_o_fsnode({
+    'n_bytes': n_bytes,
+    's_name': s_name__file,
+    's_path_absolute': s_path_absolute__file,
+    'b_folder': False,
+    'b_image': False,
+    'b_video': False,
+    'n_ts_ms_created': n_ts_ms,
+})
+
+o_utterance = f_o_utterance({
+    's_text': s_text,
+    'n_ts_ms_created': n_ts_ms,
+})
+
+o_uttdatainfo = {
+    'o_utterance': o_utterance,
+    'o_fsnode': o_fsnode,
 }
 
 if s_uuid:
-    s_json = json.dumps(o_output)
+    s_json = json.dumps(o_uttdatainfo)
     print(f"{s_uuid}_start_json")
     print(s_json)
     print(f"{s_uuid}_end_json")
