@@ -5,15 +5,13 @@ import {
     f_init_db,
     f_v_crud__indb,
 } from "./database_functions.js";
-import { f_a_o_fsnode, f_o_utterance, f_v_result_from_o_wsmsg } from "./functions.js";
+import { f_a_o_fsnode, f_o_utterance_data__read_or_create, f_v_result_from_o_wsmsg } from "./functions.js";
 import {
     a_o_model,
     f_o_model__from_s_name_table,
     f_o_model_instance,
     o_model__o_course,
     o_model__o_wsclient,
-    o_model__o_fsnode,
-    o_model__o_utterance,
     a_o_wsmsg,
     f_s_name_table__from_o_model,
     f_o_wsmsg,
@@ -209,25 +207,14 @@ let f_handler = async function(o_request, o_conninfo) {
                 ));
                 // find or create utterance audio for this message
                 if(b_utterance_generating) return;
-                let s_name_table__utterance = f_s_name_table__from_o_model(o_model__o_utterance);
-                let s_name_table__fsnode = f_s_name_table__from_o_model(o_model__o_fsnode);
-                let a_o_existing = f_v_crud__indb('read', s_name_table__utterance, { s_text: s_msg }) || [];
                 let o_utterance_data = null;
-                if(a_o_existing.length > 0){
-                    let o_utt = a_o_existing[0];
-                    let o_fs = o_utt.n_o_fsnode_n_id
-                        ? (f_v_crud__indb('read', s_name_table__fsnode, { n_id: o_utt.n_o_fsnode_n_id }) || []).at(0)
-                        : null;
-                    o_utterance_data = { o_utterance: o_utt, o_fsnode: o_fs };
-                } else {
-                    try {
-                        b_utterance_generating = true;
-                        o_utterance_data = await f_o_utterance(s_msg);
-                    } catch(o_err) {
-                        console.error('utterance generation failed:', o_err.message);
-                    } finally {
-                        b_utterance_generating = false;
-                    }
+                try {
+                    b_utterance_generating = true;
+                    o_utterance_data = await f_o_utterance_data__read_or_create(s_msg);
+                } catch(o_err) {
+                    console.error('utterance generation failed:', o_err.message);
+                } finally {
+                    b_utterance_generating = false;
                 }
                 if(o_utterance_data && o_utterance_data.o_fsnode){
                     o_socket.send(JSON.stringify(

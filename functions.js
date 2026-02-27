@@ -163,6 +163,21 @@ let f_o_utterance = async function(s_text){
     };
 };
 
+let f_o_utterance_data__read_or_create = async function(s_text){
+    let s_name_table__utterance = f_s_name_table__from_o_model(o_model__o_utterance);
+    let s_name_table__fsnode = f_s_name_table__from_o_model(o_model__o_fsnode);
+    let a_o_existing = f_v_crud__indb('read', s_name_table__utterance, { s_text }) || [];
+    if(a_o_existing.length > 0){
+        let o_utterance = a_o_existing[0];
+        let o_fsnode = o_utterance.n_o_fsnode_n_id
+            ? (f_v_crud__indb('read', s_name_table__fsnode, { n_id: o_utterance.n_o_fsnode_n_id }) || []).at(0)
+            : null;
+        return { o_utterance, o_fsnode };
+    }
+    // not found in db, generate new utterance audio
+    return await f_o_utterance(s_text);
+};
+
 let f_v_result_from_o_wsmsg = async function(
     o_wsmsg,
     o_state
@@ -187,5 +202,6 @@ let f_v_result_from_o_wsmsg = async function(
 export {
     f_a_o_fsnode,
     f_o_utterance,
+    f_o_utterance_data__read_or_create,
     f_v_result_from_o_wsmsg
 };
