@@ -206,6 +206,85 @@ let o_model__o_utterance = f_o_model({
     ]
 });
 
+let f_o_example_instance_connected_cricular_from_o_model = function(o_model, a_s_name__visited = []){
+    let o = {};
+    // fill own property with example value based on type
+    for(let o_property of o_model.a_o_property){
+        if(o_property.s_type === 'string'){
+            o[o_property.s_name] = 'string';
+        } else if(o_property.s_type === 'number'){
+            let b_timestamp = (
+                o_property.s_name === s_name_prop_ts_created
+                || o_property.s_name === s_name_prop_ts_updated
+            );
+            o[o_property.s_name] = b_timestamp ? Date.now() : 1;
+        } else if(o_property.s_type === 'boolean'){
+            o[o_property.s_name] = true;
+        }
+    }
+
+    a_s_name__visited = [...a_s_name__visited, o_model.s_name];
+
+    let s_fk__self = f_s_name_foreign_key__from_o_model(o_model);
+
+    for(let o_model__candidate of a_o_model){
+        // find foreign key property in candidate model (excluding the primary n_id)
+        let a_o_prop__fk = o_model__candidate.a_o_property.filter(function(o_prop){
+            return o_prop.s_name !== s_name_prop_id
+                && o_prop.s_name.startsWith('n_')
+                && o_prop.s_name.endsWith(`_${s_name_prop_id}`);
+        });
+
+        let b_references_self = a_o_prop__fk.some(function(o_prop){
+            return o_prop.s_name === s_fk__self;
+        });
+
+        if(!b_references_self) continue;
+
+        let b_junction = a_o_prop__fk.length >= 2;
+
+        if(b_junction){
+            // junction table: find connected model on the other side
+            for(let o_prop__fk of a_o_prop__fk){
+                if(o_prop__fk.s_name === s_fk__self) continue;
+
+                let o_model__connected = a_o_model.find(function(o_m){
+                    return f_s_name_foreign_key__from_o_model(o_m) === o_prop__fk.s_name;
+                });
+
+                if(!o_model__connected) continue;
+
+                let s_key = f_s_name_table__from_o_model(o_model__connected)
+
+                if(a_s_name__visited.includes(o_model__connected.s_name)){
+                    o[s_key] = ['...'];
+                } else {
+                    o[s_key] = [
+                        f_o_example_instance_connected_cricular_from_o_model(
+                            o_model__connected, a_s_name__visited
+                        )
+                    ];
+                }
+            }
+        } else {
+            // direct foreign key: candidate "belongs to" this model, nest as has-many
+            let s_key = f_s_name_table__from_o_model(o_model__candidate);
+
+            if(a_s_name__visited.includes(o_model__candidate.s_name)){
+                o[s_key] = ['...'];
+            } else {
+                o[s_key] = [
+                    f_o_example_instance_connected_cricular_from_o_model(
+                        o_model__candidate, a_s_name__visited
+                    )
+                ];
+            }
+        }
+    }
+
+    return o;
+}
+
 
 
 
@@ -359,5 +438,6 @@ export {
     s_o_logmsg_s_type__info,
     s_o_logmsg_s_type__debug,
     s_o_logmsg_s_type__table,
-    a_o_data_default
+    a_o_data_default,
+    f_o_example_instance_connected_cricular_from_o_model
 }
