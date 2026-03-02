@@ -20,14 +20,13 @@ let o_component__filebrowser = {
                 class: 'o_filebrowser__path_bar',
                 a_o: [
                     {
-                        s_tag: 'button',
-                        class: 'btn__up',
+                        s_tag: 'div',
+                        ':class': "'interactable' + (s_path_absolute === s_ds ? ' disabled' : '')",
                         'v-on:click': 'f_navigate_up',
-                        ':disabled': 's_path_absolute === s_ds',
                         innerText: '..',
                     },
                     {
-                        s_tag: 'span',
+                        s_tag: 'div',
                         class: 'o_filebrowser__path',
                         innerText: '{{ s_path_absolute }}',
                     },
@@ -40,16 +39,16 @@ let o_component__filebrowser = {
                     {
                         s_tag: 'div',
                         'v-for': 'o_fsnode of a_o_fsnode',
-                        ':class': "'o_fsnode ' + (o_fsnode.b_folder ? 'folder' : 'file')",
+                        ':class': "'o_fsnode ' + (o_fsnode.b_folder ? 'interactable' : 'file')",
                         'v-on:click': 'f_click_fsnode(o_fsnode)',
                         a_o: [
                             {
-                                s_tag: 'span',
+                                s_tag: 'div',
                                 class: 'o_fsnode__type',
                                 innerText: "{{ o_fsnode.b_folder ? 'dir' : 'file' }}",
                             },
                             {
-                                s_tag: 'span',
+                                s_tag: 'div',
                                 class: 'o_fsnode__name',
                                 innerText: '{{ o_fsnode.s_name }}',
                             },

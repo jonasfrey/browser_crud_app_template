@@ -30,28 +30,26 @@ let o_component__data = {
                 a_o:[
                     {
                         's_tag': "div",
-                        ":class": "'o_model' + (o_model2.s_name === o_model?.s_name ? ' active' : '')",
+                        ":class": "'interactable' + (o_model2.s_name === o_model?.s_name ? ' active' : '')",
                         'v-for': "o_model2 of o_state.a_o_model",
                         'innerText': "{{ o_model2.s_name }} ({{ (o_state[f_s_name_table__from_o_model(o_model2)] || []).length }})",
                         'v-on:click': "f_select_model(o_model2)",
                     },
                     {
-                        's_tag': "button",
-                        'class': "btn__reload",
+                        's_tag': "div",
+                        'class': "interactable",
                         'v-on:click': "f_reload_all",
                         'innerText': "Reload all",
                     },
                 ]
             },
             {
-                's_tag': "form",
+                's_tag': "div",
                 'v-if': "o_model",
                 'class': "o_form__create",
-                'v-on:submit.prevent': "f_create_instance",
                 a_o: [
                     {
-                        's_tag': "span",
-                        'class': "s_label__create",
+                        's_tag': "div",
                         'innerText': "New {{ o_model.s_name }}",
                     },
                     {
@@ -59,12 +57,12 @@ let o_component__data = {
                         'class': "a_o_input",
                         a_o: [
                             {
-                                's_tag': "label",
+                                's_tag': "div",
                                 'v-for': "o_property of a_o_property__editable",
                                 'class': "o_input_group",
                                 a_o: [
                                     {
-                                        's_tag': "span",
+                                        's_tag': "div",
                                         'innerText': "{{ o_property.s_name }}",
                                     },
                                     {
@@ -79,101 +77,97 @@ let o_component__data = {
                         ]
                     },
                     {
-                        's_tag': "button",
-                        'type': "submit",
-                        'class': "btn__create",
+                        's_tag': "div",
+                        'class': "interactable",
+                        'v-on:click': "f_create_instance",
                         'innerText': "Create",
                     },
                 ]
             },
             {
-                's_tag': "button",
+                's_tag': "div",
                 'v-if': "o_model",
-                'class': "btn__clear_table",
+                'class': "interactable",
                 'v-on:click': "f_clear_table",
                 'innerText': "Delete all data",
             },
             {
-                s_tag: "table",
+                's_tag': "div",
                 'v-if': "o_model",
                 'class': "a_o_model_data_table",
                 a_o: [
                     {
-                        's_tag': "thead",
+                        's_tag': "div",
+                        'class': "o_row o_row__header",
                         a_o: [
                             {
-                                's_tag': "tr",
-                                a_o: [
-                                    {
-                                        'v-for': "o_property of o_model?.a_o_property",
-                                        's_tag': "th",
-                                        innerText: "{{ o_property.s_name }}",
-                                    },
-                                    {
-                                        's_tag': "th",
-                                        innerText: "actions",
-                                    },
-                                ]
+                                'v-for': "o_property of o_model?.a_o_property",
+                                's_tag': "div",
+                                'class': "o_cell",
+                                innerText: "{{ o_property.s_name }}",
+                            },
+                            {
+                                's_tag': "div",
+                                'class': "o_cell",
+                                innerText: "actions",
                             },
                         ]
                     },
                     {
-                        's_tag': "tbody",
+                        's_tag': "div",
+                        'v-for': "o_instance in o_state[f_s_name_table__from_o_model(o_model)]",
+                        'class': "o_row o_instance",
                         a_o: [
                             {
-                                s_tag: 'tr',
-                                'v-for': "o_instance in o_state[f_s_name_table__from_o_model(o_model)]",
-                                class: "o_instance",
+                                'v-for': "o_property of o_model?.a_o_property",
+                                's_tag': "div",
+                                'class': "o_cell",
                                 a_o: [
                                     {
-                                        'v-for': "o_property of o_model?.a_o_property",
-                                        's_tag': "td",
-                                        a_o: [
-                                            {
-                                                // show value as text when not editing this row, or when field is auto-managed
-                                                's_tag': "span",
-                                                'v-if': "o_instance__editing?.n_id !== o_instance.n_id || a_s_name_prop__auto.includes(o_property.s_name)",
-                                                innerText: "{{ o_instance[o_property.s_name] }}",
-                                            },
-                                            {
-                                                // show input when editing this row and field is editable
-                                                's_tag': "input",
-                                                'v-if': "o_instance__editing?.n_id === o_instance.n_id && !a_s_name_prop__auto.includes(o_property.s_name)",
-                                                'v-model': "o_instance__editing[o_property.s_name]",
-                                                ':type': "o_property.s_type === 'number' ? 'number' : 'text'",
-                                                ':step': "o_property.s_type === 'number' ? 'any' : undefined",
-                                            },
-                                        ]
+                                        's_tag': "div",
+                                        'v-if': "o_instance__editing?.n_id !== o_instance.n_id || a_s_name_prop__auto.includes(o_property.s_name)",
+                                        innerText: "{{ o_instance[o_property.s_name] }}",
                                     },
                                     {
-                                        's_tag': "td",
-                                        'class': "td__actions",
-                                        a_o: [
-                                            {
-                                                's_tag': "button",
-                                                'v-if': "o_instance__editing?.n_id !== o_instance.n_id",
-                                                'v-on:click': "f_start_edit(o_instance)",
-                                                'innerText': "edit",
-                                            },
-                                            {
-                                                's_tag': "button",
-                                                'v-if': "o_instance__editing?.n_id !== o_instance.n_id",
-                                                'v-on:click': "f_delete_instance(o_instance)",
-                                                'innerText': "delete",
-                                            },
-                                            {
-                                                's_tag': "button",
-                                                'v-if': "o_instance__editing?.n_id === o_instance.n_id",
-                                                'v-on:click': "f_save_edit",
-                                                'innerText': "save",
-                                            },
-                                            {
-                                                's_tag': "button",
-                                                'v-if': "o_instance__editing?.n_id === o_instance.n_id",
-                                                'v-on:click': "f_cancel_edit",
-                                                'innerText': "cancel",
-                                            },
-                                        ]
+                                        's_tag': "input",
+                                        'v-if': "o_instance__editing?.n_id === o_instance.n_id && !a_s_name_prop__auto.includes(o_property.s_name)",
+                                        'v-model': "o_instance__editing[o_property.s_name]",
+                                        ':type': "o_property.s_type === 'number' ? 'number' : 'text'",
+                                        ':step': "o_property.s_type === 'number' ? 'any' : undefined",
+                                    },
+                                ]
+                            },
+                            {
+                                's_tag': "div",
+                                'class': "o_cell td__actions",
+                                a_o: [
+                                    {
+                                        's_tag': "div",
+                                        'class': "interactable",
+                                        'v-if': "o_instance__editing?.n_id !== o_instance.n_id",
+                                        'v-on:click': "f_start_edit(o_instance)",
+                                        'innerText': "edit",
+                                    },
+                                    {
+                                        's_tag': "div",
+                                        'class': "interactable",
+                                        'v-if': "o_instance__editing?.n_id !== o_instance.n_id",
+                                        'v-on:click': "f_delete_instance(o_instance)",
+                                        'innerText': "delete",
+                                    },
+                                    {
+                                        's_tag': "div",
+                                        'class': "interactable",
+                                        'v-if': "o_instance__editing?.n_id === o_instance.n_id",
+                                        'v-on:click': "f_save_edit",
+                                        'innerText': "save",
+                                    },
+                                    {
+                                        's_tag': "div",
+                                        'class': "interactable",
+                                        'v-if': "o_instance__editing?.n_id === o_instance.n_id",
+                                        'v-on:click': "f_cancel_edit",
+                                        'innerText': "cancel",
                                     },
                                 ]
                             },

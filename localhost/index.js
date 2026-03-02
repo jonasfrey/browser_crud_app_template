@@ -21,6 +21,7 @@ import {
 } from "./lib/handyhelpers.js"
 import { o_component__data } from './o_component__data.js';
 import { o_component__filebrowser } from './o_component__filebrowser.js';
+import './css_helper.js';
 
 let o_state = reactive({
     b_loaded: false,
@@ -208,6 +209,7 @@ let o_app = createApp({
                     a_o: [
                         {
                             's_tag': "router-link",
+                            'class': "interactable",
                             'v-for': "o_route in a_o_route",
                             ':to': 'o_route.path',
                             innerText: "{{ o_route.path }}",
@@ -232,8 +234,8 @@ let o_app = createApp({
 
                 },
                 {
-                    s_tag: "button",
-                    class: "btn__utterance_mute",
+                    s_tag: "div",
+                    class: "interactable",
                     ':class': "{ muted: b_utterance_muted }",
                     '@click': "b_utterance_muted = !b_utterance_muted",
                     ':title': "b_utterance_muted ? 'Unmute utterances' : 'Mute utterances'",
