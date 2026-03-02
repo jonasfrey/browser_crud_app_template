@@ -262,7 +262,7 @@ main {
 }
 
 /* toast */
-.a_o_toast {
+.a_o_logmsg {
     position: fixed;
     bottom: 1rem;
     right: 1rem;
@@ -274,7 +274,7 @@ main {
     max-width: 340px;
 }
 
-.o_toast {
+.o_logmsg {
     padding: 0.6rem 1rem;
     pointer-events: auto;
     animation: toast_in 0.25s ease;
@@ -283,27 +283,27 @@ main {
     border: 1px solid var(--c-border);
 }
 
-.o_toast.info {
+.o_logmsg.info {
     border-color: var(--c-info);
     color: var(--c-info);
 }
 
-.o_toast.success {
+.o_logmsg.success {
     border-color: var(--c-success);
     color: var(--c-success);
 }
 
-.o_toast.warning {
+.o_logmsg.warning {
     border-color: var(--c-warning);
     color: var(--c-warning);
 }
 
-.o_toast.error {
+.o_logmsg.error {
     border-color: var(--c-danger);
     color: var(--c-danger);
 }
 
-.o_toast.expired {
+.o_logmsg.expired {
     opacity: 0;
     display: none;
 }

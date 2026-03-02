@@ -3,6 +3,7 @@
 // functions that spawn CLI subprocesses (python, pip, etc.)
 
 import { s_ds, s_root_dir, s_uuid, s_bin__python, s_path__venv } from './runtimedata.js';
+import { s_db_create } from '../localhost/runtimedata.js';
 import { f_s_name_table__from_o_model, o_model__o_fsnode, o_model__o_utterance } from '../localhost/constructors.js';
 import { f_v_crud__indb } from './database_functions.js';
 
@@ -111,7 +112,7 @@ let f_o_uttdatainfo = async function(s_text){
 
     // create o_fsnode in db for the audio file
     let s_name_table__fsnode = f_s_name_table__from_o_model(o_model__o_fsnode);
-    let o_fsnode = f_v_crud__indb('create', s_name_table__fsnode, {
+    let o_fsnode = f_v_crud__indb(s_db_create, s_name_table__fsnode, {
         s_path_absolute: o_ipc.o_fsnode.s_path_absolute,
         s_name: o_ipc.o_fsnode.s_name,
         n_bytes: o_ipc.o_fsnode.n_bytes,
@@ -120,7 +121,7 @@ let f_o_uttdatainfo = async function(s_text){
 
     // create o_utterance in db linked to o_fsnode
     let s_name_table__utterance = f_s_name_table__from_o_model(o_model__o_utterance);
-    let o_utterance = f_v_crud__indb('create', s_name_table__utterance, {
+    let o_utterance = f_v_crud__indb(s_db_create, s_name_table__utterance, {
         s_text: o_ipc.o_utterance.s_text,
         n_o_fsnode_n_id: o_fsnode.n_id,
     });
@@ -131,7 +132,66 @@ let f_o_uttdatainfo = async function(s_text){
     };
 };
 
+
+let f_install_linux_binary = async function(s_name_binary){
+    // check if already available via PATH (which) before falling back to absolute path
+    let o_proc__which = new Deno.Command('which', {
+        args: [s_name_binary],
+        stdout: 'piped',
+        stderr: 'piped',
+    });
+    let o_result__which = await o_proc__which.output();
+    if (o_result__which.success) {
+        let s_path__found = new TextDecoder().decode(o_result__which.stdout).trim();
+        console.log(`[f_install_linux_binary] ${s_name_binary} already installed at ${s_path__found}`);
+        return;
+    }
+
+    console.log(`[f_install_linux_binary] ${s_name_binary} not found, attempting to install...`);
+
+    // try apt-get first (debian/ubuntu)
+    let o_proc__apt = new Deno.Command('sudo', {
+        args: ['apt-get', 'install', '-y', s_name_binary],
+        stdout: 'inherit',
+        stderr: 'inherit',
+    });
+    let o_result__apt = await o_proc__apt.output();
+    if (o_result__apt.success) {
+        console.log(`[f_install_linux_binary] ${s_name_binary} installed via apt-get`);
+        return;
+    }
+
+    // try pip (python packages like glances)
+    let s_path__pip = 'pip3';
+    let o_proc__pip = new Deno.Command(s_path__pip, {
+        args: ['install', s_name_binary],
+        stdout: 'inherit',
+        stderr: 'inherit',
+    });
+    let o_result__pip = await o_proc__pip.output();
+    if (o_result__pip.success) {
+        console.log(`[f_install_linux_binary] ${s_name_binary} installed via pip3`);
+        return;
+    }
+
+    // try snap as last resort
+    let o_proc__snap = new Deno.Command('sudo', {
+        args: ['snap', 'install', s_name_binary],
+        stdout: 'inherit',
+        stderr: 'inherit',
+    });
+    let o_result__snap = await o_proc__snap.output();
+    if (o_result__snap.success) {
+        console.log(`[f_install_linux_binary] ${s_name_binary} installed via snap`);
+        return;
+    }
+
+    console.error(`[f_install_linux_binary] failed to install ${s_name_binary} via apt-get, pip3, or snap`);
+}
+
+
 export {
     f_init_python,
     f_o_uttdatainfo,
+    f_install_linux_binary,
 };

@@ -16,6 +16,7 @@ import {
     f_v_crud__indb,
     f_a_o_instance__with_relations,
 } from "./database_functions.js";
+import { s_db_create } from "../localhost/runtimedata.js";
 
 Deno.test("simple sanity check", () => {
     let n_result = 1 + 2;
@@ -59,18 +60,18 @@ Deno.test("f_a_o_instance__with_relations - setup test db", async () => {
     await f_init_db(s_path__db_test);
 
     // create two course
-    let o_course__bio = f_v_crud__indb('create', f_s_name_table__from_o_model(o_model__o_course), { s_name: 'Biology' });
-    let o_course__math = f_v_crud__indb('create', f_s_name_table__from_o_model(o_model__o_course), { s_name: 'Math' });
+    let o_course__bio = f_v_crud__indb(s_db_create, f_s_name_table__from_o_model(o_model__o_course), { s_name: 'Biology' });
+    let o_course__math = f_v_crud__indb(s_db_create, f_s_name_table__from_o_model(o_model__o_course), { s_name: 'Math' });
 
     // create two student
-    let o_student__daria = f_v_crud__indb('create', f_s_name_table__from_o_model(o_model__o_student), { s_name: 'Daria' });
-    let o_student__hansi = f_v_crud__indb('create', f_s_name_table__from_o_model(o_model__o_student), { s_name: 'Hansi' });
+    let o_student__daria = f_v_crud__indb(s_db_create, f_s_name_table__from_o_model(o_model__o_student), { s_name: 'Daria' });
+    let o_student__hansi = f_v_crud__indb(s_db_create, f_s_name_table__from_o_model(o_model__o_student), { s_name: 'Hansi' });
 
     // enrol: daria -> bio, hansi -> bio + math
     let s_name_table__junction = f_s_name_table__from_o_model(o_model__o_course_o_student);
-    f_v_crud__indb('create', s_name_table__junction, { n_o_course_n_id: o_course__bio.n_id, n_o_student_n_id: o_student__daria.n_id });
-    f_v_crud__indb('create', s_name_table__junction, { n_o_course_n_id: o_course__bio.n_id, n_o_student_n_id: o_student__hansi.n_id });
-    f_v_crud__indb('create', s_name_table__junction, { n_o_course_n_id: o_course__math.n_id, n_o_student_n_id: o_student__hansi.n_id });
+    f_v_crud__indb(s_db_create, s_name_table__junction, { n_o_course_n_id: o_course__bio.n_id, n_o_student_n_id: o_student__daria.n_id });
+    f_v_crud__indb(s_db_create, s_name_table__junction, { n_o_course_n_id: o_course__bio.n_id, n_o_student_n_id: o_student__hansi.n_id });
+    f_v_crud__indb(s_db_create, s_name_table__junction, { n_o_course_n_id: o_course__math.n_id, n_o_student_n_id: o_student__hansi.n_id });
 
     // store id for subsequent test
     globalThis.o_test_id = {

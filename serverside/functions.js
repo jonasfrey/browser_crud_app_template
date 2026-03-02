@@ -4,6 +4,7 @@
 // add shared server-side helper functions here and import them where needed
 
 import { s_ds } from './runtimedata.js';
+import { s_db_create, s_db_read } from '../localhost/runtimedata.js';
 import { a_o_wsmsg, f_o_model_instance, f_s_name_table__from_o_model, o_model__o_fsnode, o_model__o_utterance, o_wsmsg__deno_copy_file, o_wsmsg__deno_mkdir, o_wsmsg__deno_stat, o_wsmsg__f_a_o_fsnode, o_wsmsg__f_delete_table_data, o_wsmsg__f_v_crud__indb, o_wsmsg__logmsg, o_wsmsg__set_state_data } from '../localhost/constructors.js';
 import { f_v_crud__indb, f_db_delete_table_data } from './database_functions.js';
 import { f_o_uttdatainfo } from './cli_functions.js';
@@ -37,11 +38,11 @@ let f_a_o_fsnode = async function(
                 }
             );
             if(b_store_in_db){
-                let o_fsnode__fromdb = (f_v_crud__indb('read', f_s_name_table__from_o_model(o_model__o_fsnode), { s_path_absolute }))?.at(0);
+                let o_fsnode__fromdb = (f_v_crud__indb(s_db_read, f_s_name_table__from_o_model(o_model__o_fsnode), { s_path_absolute }))?.at(0);
                 if (o_fsnode__fromdb) {
                     o_fsnode.n_id = o_fsnode__fromdb.n_id;
                 } else {
-                    let o_fsnode__created = f_v_crud__indb('create', f_s_name_table__from_o_model(o_model__o_fsnode), { s_path_absolute, b_folder: o_dir_entry.isDirectory });
+                    let o_fsnode__created = f_v_crud__indb(s_db_create, f_s_name_table__from_o_model(o_model__o_fsnode), { s_path_absolute, b_folder: o_dir_entry.isDirectory });
                     o_fsnode.n_id = o_fsnode__created.n_id;
                 }
                 if (o_dir_entry.isDirectory && b_recursive) {
@@ -107,11 +108,11 @@ o_wsmsg__set_state_data.f_v_server_implementation = function(o_wsmsg, o_wsmsg__e
 let f_o_uttdatainfo__read_or_create = async function(s_text){
     let s_name_table__utterance = f_s_name_table__from_o_model(o_model__o_utterance);
     let s_name_table__fsnode = f_s_name_table__from_o_model(o_model__o_fsnode);
-    let a_o_existing = f_v_crud__indb('read', s_name_table__utterance, { s_text }) || [];
+    let a_o_existing = f_v_crud__indb(s_db_read, s_name_table__utterance, { s_text }) || [];
     if(a_o_existing.length > 0){
         let o_utterance = a_o_existing[0];
         let o_fsnode = o_utterance.n_o_fsnode_n_id
-            ? (f_v_crud__indb('read', s_name_table__fsnode, { n_id: o_utterance.n_o_fsnode_n_id }) || []).at(0)
+            ? (f_v_crud__indb(s_db_read, s_name_table__fsnode, { n_id: o_utterance.n_o_fsnode_n_id }) || []).at(0)
             : null;
         return { o_utterance, o_fsnode };
     }

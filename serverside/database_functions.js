@@ -15,6 +15,7 @@ import {
     f_o_example_instance_connected_cricular_from_o_model,
 } from "../localhost/constructors.js";
 import { s_ds, s_path__database, s_path__model_constructor_cli_language } from "./runtimedata.js";
+import { s_db_create, s_db_read, s_db_update, s_db_delete } from "../localhost/runtimedata.js";
 import { ensureDir as f_ensure_dir } from "@std/fs";
 
 
@@ -82,7 +83,7 @@ let f_v_crud__indb = function(
     if(!o_model) throw new Error(`Model not found for table ${s_name_table}`);
     let v_return = null;
     
-    if(v_o_data && s_name_crud_function !== 'read'){
+    if(v_o_data && s_name_crud_function !== s_db_read){
 
         let a_s_error = f_a_s_error__invalid_model_instance(o_model, v_o_data);
         if(a_s_error.length > 0){
@@ -91,11 +92,11 @@ let f_v_crud__indb = function(
     }
 
     // set timestamps
-    if(s_name_crud_function === 'create'){
+    if(s_name_crud_function === s_db_create){
         v_o_data[s_name_prop_ts_created] = Date.now();
         v_o_data[s_name_prop_ts_updated] = Date.now();
     }
-    if(s_name_crud_function === 'update'){
+    if(s_name_crud_function === s_db_update){
         v_o_data_update[s_name_prop_ts_updated] = Date.now();
     }
 
@@ -103,14 +104,14 @@ let f_v_crud__indb = function(
     let o_model_instance = null;
     let a_s_name_property = null;
     let a_v_value = null;
-    if(v_o_data && s_name_crud_function !== 'read'){
+    if(v_o_data && s_name_crud_function !== s_db_read){
 
         o_model_instance = f_o_model_instance(o_model, v_o_data);
         a_s_name_property = Object.keys(o_model_instance);
         a_v_value = Object.values(o_model_instance);
     }
 
-    if (s_name_crud_function === 'create') {
+    if (s_name_crud_function === s_db_create) {
         // v_o_data should be an instance of o_model
         let s_sql = `INSERT INTO ${s_name_table} (${a_s_name_property.join(', ')}) VALUES (${a_s_name_property.map(function() { return '?'; }).join(', ')})`;
         o_db.prepare(s_sql).run(...a_v_value);
@@ -120,7 +121,7 @@ let f_v_crud__indb = function(
         v_return = o_db.prepare(`SELECT * FROM ${s_name_table} WHERE n_id = ?`).get(o_last.n_id)
     }
 
-    if (s_name_crud_function === 'read') {
+    if (s_name_crud_function === s_db_read) {
         // v_o_data is not null we use the specified properties as filters for the query
         let s_query = `SELECT * FROM ${s_name_table}`;
         if (v_o_data) {
@@ -140,7 +141,7 @@ let f_v_crud__indb = function(
         // v_return = a_o_row.map(function(o_row) { return f_o_row__deserialized(o_model, o_row); });
     }
 
-    if (s_name_crud_function === 'update') {
+    if (s_name_crud_function === s_db_update) {
         // v_o_data identifies the record (must have n_id)
         // v_o_data_update has the fields to change
         if(!v_o_data || v_o_data[s_name_prop_id] === undefined || v_o_data[s_name_prop_id] === null){
@@ -154,7 +155,7 @@ let f_v_crud__indb = function(
         v_return = o_db.prepare(`SELECT * FROM ${s_name_table} WHERE n_id = ?`).get(v_o_data[s_name_prop_id]);
     }
 
-    if (s_name_crud_function === 'delete') {
+    if (s_name_crud_function === s_db_delete) {
         if(!a_s_name_property.includes(s_name_prop_id)){
             throw new Error(`id property (${s_name_prop_id}) is required for delete`);
         }
@@ -209,12 +210,12 @@ let f_ensure_default_data = function(){
             return o_cache[s_key];
         }
         let s_name_table = f_s_name_table__from_o_model(o_model);
-        let a_o_existing = f_v_crud__indb('read', s_name_table, o_data_plain);
+        let a_o_existing = f_v_crud__indb(s_db_read, s_name_table, o_data_plain);
         let o_instance = null;
         if(a_o_existing && a_o_existing.length > 0){
             o_instance = a_o_existing[0];
         } else {
-            o_instance = f_v_crud__indb('create', s_name_table, o_data_plain);
+            o_instance = f_v_crud__indb(s_db_create, s_name_table, o_data_plain);
         }
         o_cache[s_key] = o_instance;
         return o_instance;

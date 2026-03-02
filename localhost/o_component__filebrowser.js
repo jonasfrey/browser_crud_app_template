@@ -8,6 +8,7 @@ import {
     o_wsmsg__f_v_crud__indb,
     o_wsmsg__f_a_o_fsnode,
 } from './constructors.js';
+import { s_db_create, s_db_read, s_db_update } from './runtimedata.js';
 
 let o_component__filebrowser = {
     name: 'component-filebrowser',
@@ -82,7 +83,7 @@ let o_component__filebrowser = {
             await f_send_wsmsg_with_response(
                 f_o_wsmsg(
                     o_wsmsg__f_v_crud__indb.s_name,
-                    ['update', 'a_o_keyvalpair', { n_id: o_self.n_id__keyvalpair }, { s_key: 's_path_absolute__filebrowser', s_value: s_path_absolute }]
+                    [s_db_update, 'a_o_keyvalpair', { n_id: o_self.n_id__keyvalpair }, { s_key: 's_path_absolute__filebrowser', s_value: s_path_absolute }]
                 )
             );
             let n_idx = (o_state.a_o_keyvalpair || []).findIndex(function(o) { return o.n_id === o_self.n_id__keyvalpair; });
@@ -106,7 +107,7 @@ let o_component__filebrowser = {
         let o_self = this;
         o_self.s_ds = o_state.s_ds || '/';
         let o_resp = await f_send_wsmsg_with_response(
-            f_o_wsmsg(o_wsmsg__f_v_crud__indb.s_name, ['read', 'a_o_keyvalpair', { s_key: 's_path_absolute__filebrowser' }])
+            f_o_wsmsg(o_wsmsg__f_v_crud__indb.s_name, [s_db_read, 'a_o_keyvalpair', { s_key: 's_path_absolute__filebrowser' }])
         );
         let a_o_result = o_resp.v_result || [];
         if (a_o_result.length > 0) {
@@ -116,7 +117,7 @@ let o_component__filebrowser = {
             let o_resp_create = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
                     o_wsmsg__f_v_crud__indb.s_name,
-                    ['create', 'a_o_keyvalpair', { s_key: 's_path_absolute__filebrowser', s_value: o_self.s_path_absolute }]
+                    [s_db_create, 'a_o_keyvalpair', { s_key: 's_path_absolute__filebrowser', s_value: o_self.s_path_absolute }]
                 )
             );
             o_self.n_id__keyvalpair = o_resp_create.v_result?.n_id;

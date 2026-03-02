@@ -23,6 +23,8 @@ let s_uuid = Deno.env.get('S_UUID') ?? '';
 let s_bin__python = Deno.env.get('BIN_PYTHON') ?? 'python3';
 let s_path__venv = Deno.env.get('PATH_VENV') ?? './venv';
 
+let s_bin__glances = Deno.env.get('BIN_GLANCES') ?? 'glances';
+
 export {
     s_root_dir,
     s_ds,
@@ -33,4 +35,5 @@ export {
     s_uuid,
     s_bin__python,
     s_path__venv,
+    s_bin__glances,
 }

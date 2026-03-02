@@ -17,6 +17,7 @@ import {
     o_wsmsg__f_delete_table_data,
     f_o_wsmsg
 } from './constructors.js';
+import { s_db_create, s_db_read, s_db_update, s_db_delete } from './runtimedata.js';
 
 
 let a_s_name_prop__auto = [s_name_prop_id, s_name_prop_ts_created, s_name_prop_ts_updated];
@@ -35,12 +36,7 @@ let o_component__data = {
                         'innerText': "{{ o_model2.s_name }} ({{ (o_state[f_s_name_table__from_o_model(o_model2)] || []).length }})",
                         'v-on:click': "f_select_model(o_model2)",
                     },
-                    {
-                        's_tag': "div",
-                        'class': "interactable",
-                        'v-on:click': "f_reload_all",
-                        'innerText': "Reload all",
-                    },
+
                 ]
             },
             {
@@ -196,15 +192,7 @@ let o_component__data = {
     },
     methods:{
         f_s_name_table__from_o_model,
-        f_reload_all: async function() {
-            for (let o_model2 of a_o_model) {
-                let s_name_table = f_s_name_table__from_o_model(o_model2);
-                let o_resp = await f_send_wsmsg_with_response(
-                    f_o_wsmsg(o_wsmsg__f_v_crud__indb.s_name, ['read', s_name_table])
-                );
-                o_state[s_name_table] = o_resp.v_result || [];
-            }
-        },
+
         f_select_model: function(o_model2) {
             this.o_model = o_model2;
             this.o_instance__new = {};
@@ -228,7 +216,7 @@ let o_component__data = {
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
                     o_wsmsg__f_v_crud__indb.s_name,
-                    ['delete', s_name_table, o_instance]
+                    [s_db_delete, s_name_table, o_instance]
                 )
             );
             if(o_resp.v_result){
@@ -250,10 +238,12 @@ let o_component__data = {
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
                     o_wsmsg__f_v_crud__indb.s_name,
-                    ['create', s_name_table, o_data]
+                    [s_db_create, s_name_table, o_data]
                 )
             );
-            o_state[s_name_table].push(o_resp.v_result);
+            // console.log(o_resp)
+            debugger
+            // o_state[s_name_table].push(o_resp.v_result);
         },
         f_start_edit: function(o_instance) {
             this.o_instance__editing = { ...o_instance };
@@ -274,7 +264,7 @@ let o_component__data = {
             let o_resp = await f_send_wsmsg_with_response(
                 f_o_wsmsg(
                     o_wsmsg__f_v_crud__indb.s_name,
-                    ['update', s_name_table, o_data__id, o_data__update]
+                    [s_db_update, s_name_table, o_data__id, o_data__update]
                 )
             );
             if(o_resp.v_result){

@@ -20,6 +20,8 @@ import {
     o_wsmsg__logmsg,
     o_wsmsg__set_state_data,
     o_wsmsg__utterance,
+    o_wsmsg__f_v_crud__indb,
+    o_wsmsg__f_delete_table_data,
     s_o_logmsg_s_type__log,
     s_o_logmsg_s_type__info,
     s_o_logmsg_s_type__error,
@@ -30,12 +32,49 @@ import {
     n_port,
     s_dir__static,
 } from "./serverside/runtimedata.js";
+import { s_db_create, s_db_read, s_db_update, s_db_delete } from "./localhost/runtimedata.js";
+
+// guard: require .env file before running
+try {
+    await Deno.stat('.env');
+} catch {
+    console.log('.env file not found. Please create a .env file before running the websocket server.');
+    console.log('You can copy .env.example as a starting point:');
+    console.log('  cp .env.example .env');
+    Deno.exit(1);
+}
 
 let o_state = {}
+let a_o_socket = [];
 
 await f_init_db();
 await f_init_python();
 await f_generate_model_constructors_for_cli_languages();
+
+// initialize server-side state with DB table data
+for (let o_model of a_o_model) {
+    let s_name_table = f_s_name_table__from_o_model(o_model);
+    o_state[s_name_table] = f_v_crud__indb(s_db_read, s_name_table) || [];
+}
+
+let f_broadcast_db_data = function(s_name_table) {
+    let a_o_data = f_v_crud__indb(s_db_read, s_name_table) || [];
+    o_state[s_name_table] = a_o_data;
+    let s_msg = JSON.stringify(
+        f_o_wsmsg(
+            o_wsmsg__set_state_data.s_name,
+            {
+                s_property: s_name_table,
+                value: a_o_data
+            }
+        )
+    );
+    for (let o_sock of a_o_socket) {
+        if (o_sock.readyState === WebSocket.OPEN) {
+            o_sock.send(s_msg);
+        }
+    }
+};
 
 
 let f_s_content_type = function(s_path) {
@@ -66,14 +105,14 @@ let f_handler = async function(o_request, o_conninfo) {
         );
         let s_name_table__wsclient = f_s_name_table__from_o_model(o_model__o_wsclient);
         let o_wsclient_db = f_v_crud__indb(
-            'read',
+            s_db_read,
             s_name_table__wsclient,
             o_wsclient
         )?.at(0);
         // console.log(o_wsclient_db)
         if(!o_wsclient_db){
             o_wsclient_db = f_v_crud__indb(
-                'create',
+                s_db_create,
                 s_name_table__wsclient,
                 o_wsclient,
                 true
@@ -81,6 +120,7 @@ let f_handler = async function(o_request, o_conninfo) {
         }
         o_socket.onopen = async function() {
             console.log('websocket connected');
+            a_o_socket.push(o_socket);
             o_socket.send(JSON.stringify(
                 f_o_wsmsg(
                     o_wsmsg__set_state_data.s_name,
@@ -107,7 +147,7 @@ let f_handler = async function(o_request, o_conninfo) {
                         o_wsmsg__set_state_data.s_name,
                         {
                             s_property: f_s_name_table__from_o_model(o_model),
-                            value: f_v_crud__indb('read', f_s_name_table__from_o_model(o_model)) || []
+                            value: f_v_crud__indb(s_db_read, f_s_name_table__from_o_model(o_model)) || []
                         }
                     )
                 ));
@@ -247,6 +287,23 @@ let f_handler = async function(o_request, o_conninfo) {
                             s_uuid: o_wsmsg.s_uuid,
                         }));
                     }
+                    // broadcast updated DB table state to all clients after mutations
+                    let a_s_mutation = [s_db_create, s_db_update, s_db_delete];
+                    if (o_wsmsg.s_name === o_wsmsg__f_v_crud__indb.s_name) {
+                        let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+                        let s_operation = a_v_arg[0];
+                        let s_name_table = a_v_arg[1];
+                        if (s_name_table && a_s_mutation.includes(s_operation)) {
+                            f_broadcast_db_data(s_name_table);
+                        }
+                    }
+                    if (o_wsmsg.s_name === o_wsmsg__f_delete_table_data.s_name) {
+                        let a_v_arg = Array.isArray(o_wsmsg.v_data) ? o_wsmsg.v_data : [];
+                        let s_name_table = a_v_arg[0];
+                        if (s_name_table) {
+                            f_broadcast_db_data(s_name_table);
+                        }
+                    }
                 } catch (o_error) {
                     // send response with original s_uuid so client promise resolves
                     if(o_wsmsg__existing.b_expecting_response){
@@ -292,6 +349,10 @@ let f_handler = async function(o_request, o_conninfo) {
 
         o_socket.onclose = function() {
             console.log('websocket disconnected');
+            let n_idx = a_o_socket.indexOf(o_socket);
+            if (n_idx !== -1) {
+                a_o_socket.splice(n_idx, 1);
+            }
         };
 
         return o_response;

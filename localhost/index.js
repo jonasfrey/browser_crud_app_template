@@ -23,6 +23,10 @@ import { o_component__data } from './o_component__data.js';
 import { o_component__filebrowser } from './o_component__filebrowser.js';
 import './css_helper.js';
 
+import { o_logmsg__run_command } from "./runtimedata.js";
+
+
+
 let o_state = reactive({
     b_loaded: false,
     a_o_route : [
@@ -42,11 +46,12 @@ let o_state = reactive({
         },
     ],
     a_o_model,
-    a_o_toast: [
+    a_o_logmsg: [
         f_o_logmsg('Welcome to the app!', false, true, 'success', Date.now(), 5000),
     ],
     n_ts_ms_now: Date.now(),
     b_utterance_muted: true,
+    o_logmsg__run_command
 });
 
 // auto-derive reactive keys for each model table so Vue tracks them before the server sends data
@@ -91,7 +96,7 @@ let n_ms__reconnect_cap = 60000;
 let b_reconnecting = false;
 
 let f_push_toast = function(s_message, s_type, n_ttl_ms){
-    o_state.a_o_toast.push(
+    o_state.a_o_logmsg.push(
         f_o_logmsg(s_message, false, true, s_type, Date.now(), n_ttl_ms || 5000)
     );
 };
@@ -221,15 +226,21 @@ let o_app = createApp({
                 },  
                 {
                     s_tag: "div",
-                    class: "a_o_toast",
+                    class: "a_o_logmsg",
                     a_o: [
                         {
                             s_tag: "div",
-                            class: "o_toast",
-                            'v-for': "o_toast in a_o_toast",
-                            ':class': "[o_toast.s_type, { expired: n_ts_ms_now > o_toast.n_ts_ms_created + o_toast.n_ttl_ms }]",
-                            innerText: "{{ o_toast.s_message }}",
-                        }
+                            class: "o_logmsg",
+                            'v-for': "o_logmsg in a_o_logmsg",
+                            ':class': "[o_logmsg.s_type, { expired: n_ts_ms_now > o_logmsg.n_ts_ms_created + o_logmsg.n_ttl_ms }]",
+                            innerText: "{{ o_logmsg.s_message }}",
+                        },
+                        {
+                            s_tag: "div",
+                            class: "o_logmsg",
+                            ':class': "[o_logmsg__run_command.s_type, { expired: n_ts_ms_now > o_logmsg__run_command.n_ts_ms_created + o_logmsg__run_command.n_ttl_ms }]",
+                            innerText: "{{ o_logmsg__run_command.s_message }}",
+                        },
                     ]
 
                 },

@@ -12,3 +12,6 @@ since client side and server side is mainly programmed in native javascript , al
 communication is done by a websocket. http requests should be avoided , instead websocket messages are used. there is also a websocket message function that expects a response. it should be used to replace the 'classical' http fetch. 
 
 if a part of the programm can only be executed by calling a binary this can be done but the master scripts should all be in javascript. is required
+
+---
+# 
