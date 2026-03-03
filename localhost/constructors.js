@@ -83,19 +83,19 @@ let f_o_model__from_s_name_table = function(s_name_table) {
     });
 };
 
-let o_course__math101 = {
-    s_name: 'Math 101'
+let o_course__opensource101 = {
+    s_name: 'Opensource 101'
 }
-let o_course__cs101 = {
-    s_name: 'CS 101'
+let o_course__geometry101 = {
+    s_name: 'Geometry 101'
 }
 let o_student__gretel = {
     s_name: 'Gretel',
-    o_course: o_course__cs101
+    o_course: o_course__geometry101
 }
 let o_student__olaf = {
     s_name: 'Olaf',
-    o_course: o_course__math101
+    o_course: o_course__opensource101
 }
 
 let a_o_data_default = [
@@ -104,7 +104,7 @@ let a_o_data_default = [
     {
         o_student: {
             s_name: "Daria", 
-            o_course: o_course__math101
+            o_course: o_course__opensource101
         }
     },
     {
@@ -112,7 +112,24 @@ let a_o_data_default = [
             s_key: 's_path_absolute__filebrowser',
             s_value: '/home'
         }
-    }
+    },
+    {
+        o_course: {
+            s_name: 'Database Systems 101', 
+            a_o_student: [
+                'Gretel',
+                'Olaf',
+                'Daria', 
+                'Isabel', 
+                'Salomon',
+                'Gandalf',
+                'Rumplestiltskin',
+                'Elizabeth',
+                'Albert', 
+                'Tiffany',
+            ]
+        }
+    },
 ]
 
 
