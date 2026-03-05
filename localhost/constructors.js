@@ -10,6 +10,8 @@ let f_s_name_table__from_o_model = function(o_model) {
 let f_s_name_foreign_key__from_o_model = function(o_model) {
     return 'n_' + o_model.s_name + '_' + s_name_prop_id;
 }
+
+
 let f_o_property = function(
     s_name, 
     s_type, 
@@ -304,6 +306,21 @@ let f_o_example_instance_connected_cricular_from_o_model = function(o_model, a_s
 
 
 
+// shared state array mutation — used by both client and server o_wsmsg__syncdata.f_v_sync
+let f_apply_crud_to_a_o = function(a_o, s_operation, o_data){
+    if(!a_o || !o_data) return;
+    if(s_operation === 'create'){
+        a_o.push(o_data);
+    }
+    if(s_operation === 'update'){
+        let n_idx = a_o.findIndex(function(o){ return o[s_name_prop_id] === o_data[s_name_prop_id]; });
+        if(n_idx !== -1) Object.assign(a_o[n_idx], o_data);
+    }
+    if(s_operation === 'delete'){
+        let n_idx = a_o.findIndex(function(o){ return o[s_name_prop_id] === o_data[s_name_prop_id]; });
+        if(n_idx !== -1) a_o.splice(n_idx, 1);
+    }
+};
 
 let s_o_logmsg_s_type__log = 'log';
 let s_o_logmsg_s_type__error = 'error';
@@ -376,6 +393,7 @@ let o_wsmsg__f_a_o_fsnode = f_o_wsmsg_def('f_a_o_fsnode', true);
 let o_wsmsg__logmsg = f_o_wsmsg_def('logmsg', false);
 let o_wsmsg__set_state_data = f_o_wsmsg_def('set_state_data', false);
 let o_wsmsg__utterance = f_o_wsmsg_def('utterance', false);
+let o_wsmsg__syncdata = f_o_wsmsg_def('syncdata', true);
 
 // client implementations
 o_wsmsg__logmsg.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state){
@@ -413,6 +431,7 @@ let a_o_wsmsg = [
     o_wsmsg__logmsg,
     o_wsmsg__set_state_data,
     o_wsmsg__utterance,
+    o_wsmsg__syncdata,
 ]
 
 export {
@@ -447,6 +466,7 @@ export {
     o_wsmsg__f_a_o_fsnode,
     o_wsmsg__logmsg,
     o_wsmsg__utterance,
+    o_wsmsg__syncdata,
     f_o_wsmsg,
     f_o_wsmsg_def,
     s_o_logmsg_s_type__log,
@@ -456,5 +476,6 @@ export {
     s_o_logmsg_s_type__debug,
     s_o_logmsg_s_type__table,
     a_o_data_default,
-    f_o_example_instance_connected_cricular_from_o_model
+    f_o_example_instance_connected_cricular_from_o_model,
+    f_apply_crud_to_a_o
 }

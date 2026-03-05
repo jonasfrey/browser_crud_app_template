@@ -22,9 +22,12 @@ import {
     o_wsmsg__utterance,
     o_wsmsg__f_v_crud__indb,
     o_wsmsg__f_delete_table_data,
+    o_wsmsg__syncdata,
     s_o_logmsg_s_type__log,
     s_o_logmsg_s_type__info,
     s_o_logmsg_s_type__error,
+    s_name_prop_id,
+    f_apply_crud_to_a_o,
 } from "./localhost/constructors.js";
 import {
     s_ds,
@@ -53,7 +56,6 @@ let a_s_env_missing = [
     'S_UUID',
     'BIN_PYTHON',
     'PATH_VENV',
-    'BIN_GLANCES',
 ].filter(s => !Deno.env.get(s));
 if (a_s_env_missing.length > 0) {
     console.log('Missing environment variables: ' + a_s_env_missing.join(', '));
@@ -96,6 +98,57 @@ let f_broadcast_db_data = function(s_name_table) {
     }
 };
 
+// server-side syncdata: DB operation, o_state update, broadcast to clients
+// o_socket__exclude: skip this socket when broadcasting (used for client-initiated syncs)
+o_wsmsg__syncdata.f_v_sync = function({s_name_table, s_operation, o_data}, o_socket__exclude){
+    let v_result = null;
+    if(s_operation === 'read'){
+        v_result = f_v_crud__indb(s_db_read, s_name_table, o_data);
+    }
+    if(s_operation === 'create'){
+        v_result = f_v_crud__indb(s_db_create, s_name_table, o_data);
+    }
+    if(s_operation === 'update'){
+        let n_id = o_data[s_name_prop_id];
+        if(n_id == null) throw new Error('n_id is required for update');
+        let o_update = {};
+        for(let s_key in o_data){
+            if(s_key === s_name_prop_id) continue;
+            o_update[s_key] = o_data[s_key];
+        }
+        v_result = f_v_crud__indb(s_db_update, s_name_table, { [s_name_prop_id]: n_id }, o_update);
+    }
+    if(s_operation === 'delete'){
+        let n_id = o_data[s_name_prop_id];
+        if(n_id == null) throw new Error('n_id is required for delete');
+        v_result = f_v_crud__indb(s_db_delete, s_name_table, o_data);
+    }
+    // update server o_state
+    let o_data__for_state = s_operation === 'delete' ? o_data : v_result;
+    f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state);
+    // broadcast to clients (read operations are not broadcast)
+    if(s_operation !== 'read' && v_result){
+        let s_msg = JSON.stringify(
+            f_o_wsmsg(o_wsmsg__syncdata.s_name, {
+                s_name_table,
+                s_operation,
+                o_data: o_data__for_state
+            })
+        );
+        for(let o_sock of a_o_socket){
+            if(o_sock !== o_socket__exclude && o_sock.readyState === WebSocket.OPEN){
+                o_sock.send(s_msg);
+            }
+        }
+    }
+    return v_result;
+};
+
+// websocket receive handler: delegate to f_v_sync, exclude sender from broadcast
+o_wsmsg__syncdata.f_v_server_implementation = function(o_wsmsg, o_wsmsg__existing, o_state_ref, o_socket__sender){
+    let { s_name_table, s_operation, o_data } = o_wsmsg.v_data;
+    return o_wsmsg__syncdata.f_v_sync({s_name_table, s_operation, o_data}, o_socket__sender);
+};
 
 let f_s_content_type = function(s_path) {
     if (s_path.endsWith('.html')) return 'text/html';
@@ -254,39 +307,51 @@ let f_handler = async function(o_request, o_conninfo) {
             setInterval(async function() {
                 let s_msg = a_s_msg_annoying[Math.floor(Math.random() * a_s_msg_annoying.length)];
                 // send toast
-                o_socket.send(JSON.stringify(
-                    f_o_wsmsg(
-                        o_wsmsg__logmsg.s_name,
-                        f_o_logmsg(
-                            s_msg,
-                            true,
-                            true,
-                            s_o_logmsg_s_type__info,
-                            Date.now(),
-                            5000
-                        )
-                    )
-                ));
-                // find or create utterance audio for this message
-                if(b_utterance_generating) return;
-                let o_utterance_data = null;
-                try {
-                    b_utterance_generating = true;
-                    o_utterance_data = await f_o_uttdatainfo__read_or_create(s_msg);
-                } catch(o_err) {
-                    console.error('utterance generation failed:', o_err.message);
-                } finally {
-                    b_utterance_generating = false;
+
+                // test server-side syncdata: update first student's name
+                let o_student = o_state.a_o_student?.[0];
+                if(o_student){
+                    let o = o_wsmsg__syncdata.f_v_sync({
+                        s_name_table: 'a_o_student',
+                        s_operation: 'update',
+                        o_data: { n_id: o_student.n_id, s_name: `changed from server ${Math.random().toString(36).substring(2, 7)}` }
+                    });
+                    console.log(o)
                 }
-                if(o_utterance_data && o_utterance_data.o_fsnode){
-                    o_socket.send(JSON.stringify(
-                        f_o_wsmsg(
-                            o_wsmsg__utterance.s_name,
-                            o_utterance_data
-                        )
-                    ));
-                }
-             }, 5000);
+
+                // o_socket.send(JSON.stringify(
+                //     f_o_wsmsg(
+                //         o_wsmsg__logmsg.s_name,
+                //         f_o_logmsg(
+                //             s_msg,
+                //             true,
+                //             true,
+                //             s_o_logmsg_s_type__info,
+                //             Date.now(),
+                //             5000
+                //         )
+                //     )
+                // ));
+                // // find or create utterance audio for this message
+                // if(b_utterance_generating) return;
+                // let o_utterance_data = null;
+                // try {
+                //     b_utterance_generating = true;
+                //     o_utterance_data = await f_o_uttdatainfo__read_or_create(s_msg);
+                // } catch(o_err) {
+                //     console.error('utterance generation failed:', o_err.message);
+                // } finally {
+                //     b_utterance_generating = false;
+                // }
+                // if(o_utterance_data && o_utterance_data.o_fsnode){
+                //     o_socket.send(JSON.stringify(
+                //         f_o_wsmsg(
+                //             o_wsmsg__utterance.s_name,
+                //             o_utterance_data
+                //         )
+                //     ));
+                // }
+             },500);
 
         };
 
@@ -299,7 +364,8 @@ let f_handler = async function(o_request, o_conninfo) {
                 try {
                     let v_result = await f_v_result_from_o_wsmsg(
                         o_wsmsg,
-                        o_state
+                        o_state,
+                        o_socket
                     );
                     if(o_wsmsg__existing.b_expecting_response){
                         o_socket.send(JSON.stringify({

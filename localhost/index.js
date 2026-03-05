@@ -6,10 +6,12 @@ import {
     a_o_model,
     f_s_name_table__from_o_model,
     o_wsmsg__f_v_crud__indb,
+    o_wsmsg__syncdata,
     o_wsmsg__logmsg,
     a_o_wsmsg,
     f_o_wsmsg,
     f_o_logmsg,
+    f_apply_crud_to_a_o,
     s_o_logmsg_s_type__log,
     s_o_logmsg_s_type__error,
     s_o_logmsg_s_type__warn,
@@ -272,8 +274,32 @@ let f_o_socket = function() {
     return o_socket;
 };
 
+// syncdata client implementation: apply broadcasts from other clients / server
+o_wsmsg__syncdata.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state_ref){
+    let v_data = o_wsmsg.v_data;
+    f_apply_crud_to_a_o(o_state_ref[v_data.s_name_table], v_data.s_operation, v_data.o_data);
+};
+
+o_wsmsg__syncdata.f_v_sync = async function({s_name_table, s_operation, o_data}){
+    let o_resp = await f_send_wsmsg_with_response(
+        f_o_wsmsg(o_wsmsg__syncdata.s_name, {
+            s_name_table,
+            s_operation,
+            o_data
+        })
+    );
+    if(o_resp.s_error) throw new Error(o_resp.s_error);
+    let v_result = o_resp.v_result;
+    if(s_operation !== 'read'){
+        let o_data__for_state = s_operation === 'delete' ? o_data : v_result;
+        f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state);
+    }
+    return v_result;
+};
+
 export {
     o_state,
     f_o_socket,
-    f_send_wsmsg_with_response
+    f_send_wsmsg_with_response,
+    o_wsmsg__syncdata
 }

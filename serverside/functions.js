@@ -4,7 +4,7 @@
 // add shared server-side helper functions here and import them where needed
 
 import { s_ds } from './runtimedata.js';
-import { s_db_create, s_db_read } from '../localhost/runtimedata.js';
+import { s_db_create, s_db_read, s_db_update, s_db_delete } from '../localhost/runtimedata.js';
 import { a_o_wsmsg, f_o_model_instance, f_s_name_table__from_o_model, o_model__o_fsnode, o_model__o_utterance, o_wsmsg__deno_copy_file, o_wsmsg__deno_mkdir, o_wsmsg__deno_stat, o_wsmsg__f_a_o_fsnode, o_wsmsg__f_delete_table_data, o_wsmsg__f_v_crud__indb, o_wsmsg__logmsg, o_wsmsg__set_state_data } from '../localhost/constructors.js';
 import { f_v_crud__indb, f_db_delete_table_data } from './database_functions.js';
 import { f_o_uttdatainfo } from './cli_functions.js';
@@ -122,7 +122,8 @@ let f_o_uttdatainfo__read_or_create = async function(s_text){
 
 let f_v_result_from_o_wsmsg = async function(
     o_wsmsg,
-    o_state
+    o_state,
+    o_socket__sender
 ){
     let o_wsmsg__existing = a_o_wsmsg.find(o=>o.s_name === o_wsmsg.s_name);
     if(!o_wsmsg__existing){
@@ -135,8 +136,9 @@ let f_v_result_from_o_wsmsg = async function(
     }
     return o_wsmsg__existing.f_v_server_implementation(
         o_wsmsg,
-        o_wsmsg__existing, 
-        o_state
+        o_wsmsg__existing,
+        o_state,
+        o_socket__sender
     );
 
 }
