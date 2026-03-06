@@ -3,9 +3,7 @@
 // functions that spawn CLI subprocesses (python, pip, etc.)
 
 import { s_ds, s_root_dir, s_uuid, s_bin__python, s_path__venv } from './runtimedata.js';
-import { s_db_create } from '../localhost/runtimedata.js';
-import { f_s_name_table__from_o_model, o_model__o_fsnode, o_model__o_utterance } from '../localhost/constructors.js';
-import { f_v_crud__indb } from './database_functions.js';
+import { f_s_name_table__from_o_model, o_model__o_fsnode, o_model__o_utterance, o_wsmsg__syncdata } from '../localhost/constructors.js';
 
 let f_init_python = async function(){
     let a_s_package = ['python-dotenv', 'pyttsx3'];
@@ -112,18 +110,26 @@ let f_o_uttdatainfo = async function(s_text){
 
     // create o_fsnode in db for the audio file
     let s_name_table__fsnode = f_s_name_table__from_o_model(o_model__o_fsnode);
-    let o_fsnode = f_v_crud__indb(s_db_create, s_name_table__fsnode, {
-        s_path_absolute: o_ipc.o_fsnode.s_path_absolute,
-        s_name: o_ipc.o_fsnode.s_name,
-        n_bytes: o_ipc.o_fsnode.n_bytes,
-        b_folder: false,
+    let o_fsnode = o_wsmsg__syncdata.f_v_sync({
+        s_name_table: s_name_table__fsnode,
+        s_operation: 'create',
+        o_data: {
+            s_path_absolute: o_ipc.o_fsnode.s_path_absolute,
+            s_name: o_ipc.o_fsnode.s_name,
+            n_bytes: o_ipc.o_fsnode.n_bytes,
+            b_folder: false,
+        }
     });
 
     // create o_utterance in db linked to o_fsnode
     let s_name_table__utterance = f_s_name_table__from_o_model(o_model__o_utterance);
-    let o_utterance = f_v_crud__indb(s_db_create, s_name_table__utterance, {
-        s_text: o_ipc.o_utterance.s_text,
-        n_o_fsnode_n_id: o_fsnode.n_id,
+    let o_utterance = o_wsmsg__syncdata.f_v_sync({
+        s_name_table: s_name_table__utterance,
+        s_operation: 'create',
+        o_data: {
+            s_text: o_ipc.o_utterance.s_text,
+            n_o_fsnode_n_id: o_fsnode.n_id,
+        }
     });
 
     return {

@@ -73,31 +73,6 @@ await f_init_db();
 await f_init_python();
 await f_generate_model_constructors_for_cli_languages();
 
-// initialize server-side state with DB table data
-for (let o_model of a_o_model) {
-    let s_name_table = f_s_name_table__from_o_model(o_model);
-    o_state[s_name_table] = f_v_crud__indb(s_db_read, s_name_table) || [];
-}
-
-let f_broadcast_db_data = function(s_name_table) {
-    let a_o_data = f_v_crud__indb(s_db_read, s_name_table) || [];
-    o_state[s_name_table] = a_o_data;
-    let s_msg = JSON.stringify(
-        f_o_wsmsg(
-            o_wsmsg__set_state_data.s_name,
-            {
-                s_property: s_name_table,
-                value: a_o_data
-            }
-        )
-    );
-    for (let o_sock of a_o_socket) {
-        if (o_sock.readyState === WebSocket.OPEN) {
-            o_sock.send(s_msg);
-        }
-    }
-};
-
 // server-side syncdata: DB operation, o_state update, broadcast to clients
 // o_socket__exclude: skip this socket when broadcasting (used for client-initiated syncs)
 o_wsmsg__syncdata.f_v_sync = function({s_name_table, s_operation, o_data}, o_socket__exclude){
@@ -150,6 +125,31 @@ o_wsmsg__syncdata.f_v_server_implementation = function(o_wsmsg, o_wsmsg__existin
     return o_wsmsg__syncdata.f_v_sync({s_name_table, s_operation, o_data}, o_socket__sender);
 };
 
+// initialize server-side state with DB table data
+for (let o_model of a_o_model) {
+    let s_name_table = f_s_name_table__from_o_model(o_model);
+    o_state[s_name_table] = o_wsmsg__syncdata.f_v_sync({s_name_table, s_operation: 'read', o_data: {}}) || [];
+}
+
+let f_broadcast_db_data = function(s_name_table) {
+    let a_o_data = o_wsmsg__syncdata.f_v_sync({s_name_table, s_operation: 'read', o_data: {}}) || [];
+    o_state[s_name_table] = a_o_data;
+    let s_msg = JSON.stringify(
+        f_o_wsmsg(
+            o_wsmsg__set_state_data.s_name,
+            {
+                s_property: s_name_table,
+                value: a_o_data
+            }
+        )
+    );
+    for (let o_sock of a_o_socket) {
+        if (o_sock.readyState === WebSocket.OPEN) {
+            o_sock.send(s_msg);
+        }
+    }
+};
+
 let f_s_content_type = function(s_path) {
     if (s_path.endsWith('.html')) return 'text/html';
     if (s_path.endsWith('.js')) return 'application/javascript';
@@ -177,19 +177,17 @@ let f_handler = async function(o_request, o_conninfo) {
             }
         );
         let s_name_table__wsclient = f_s_name_table__from_o_model(o_model__o_wsclient);
-        let o_wsclient_db = f_v_crud__indb(
-            s_db_read,
-            s_name_table__wsclient,
-            o_wsclient
-        )?.at(0);
-        // console.log(o_wsclient_db)
+        let o_wsclient_db = (o_wsmsg__syncdata.f_v_sync({
+            s_name_table: s_name_table__wsclient,
+            s_operation: 'read',
+            o_data: o_wsclient
+        }) || []).at(0);
         if(!o_wsclient_db){
-            o_wsclient_db = f_v_crud__indb(
-                s_db_create,
-                s_name_table__wsclient,
-                o_wsclient,
-                true
-            );
+            o_wsclient_db = o_wsmsg__syncdata.f_v_sync({
+                s_name_table: s_name_table__wsclient,
+                s_operation: 'create',
+                o_data: o_wsclient
+            });
         }
         o_socket.onopen = async function() {
             console.log('websocket connected');
