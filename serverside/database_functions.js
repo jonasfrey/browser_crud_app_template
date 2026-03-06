@@ -197,7 +197,7 @@ let f_v_crud__indb = function(
 
 
 let f_ensure_default_data = function(){
-    // reads nested object structure from a_o_data_default and creates corresponding instances in db,
+    // reads 'denormalized' object structure from a_o_data_default and creates corresponding instances in db,
     // minimal example { o_person: {s_name: "Gretel", o_pet: {s_name: "Hansi"}}} with models Person and Pet where Person has a FK to Pet,
     // cache to deduplicate instances: "model_name:key=val,key=val" -> db record
     let o_cache = {};
@@ -327,7 +327,7 @@ let f_ensure_default_data = function(){
     }
 };
 
-let f_a_o_instance__with_relations = function(o_model, a_n_id, a_s_name__visited = []){
+let f_a_o_instance__with_relations__old = function(o_model, a_n_id, a_s_name__visited = []){
     let s_name_table = f_s_name_table__from_o_model(o_model);
 
     // load instance by id
@@ -424,6 +424,125 @@ let f_a_o_instance__with_relations = function(o_model, a_n_id, a_s_name__visited
     return a_o_instance;
 }
 
+let f_a_o_instance__denormalized = function(o_model, a_n_id, a_s_name__visited = [], o_cache, b_read_from_db = false){
+    let s_name_table = f_s_name_table__from_o_model(o_model);
+
+    // load instances either from db or from cache
+    let a_o_instance = [];
+    if(b_read_from_db){
+        for(let n_id of a_n_id){
+            let o_instance = o_db.prepare(`SELECT * FROM ${s_name_table} WHERE n_id = ?`).get(n_id);
+            if(o_instance) a_o_instance.push({...o_instance});
+        }
+    } else {
+        let a_o_cached = o_cache[s_name_table] || [];
+        for(let n_id of a_n_id){
+            let o_instance = a_o_cached.find(function(o){ return o.n_id === n_id; });
+            if(o_instance) a_o_instance.push({...o_instance});
+        }
+    }
+
+    a_s_name__visited = [...a_s_name__visited, o_model.s_name];
+
+    let s_fk__self = f_s_name_foreign_key__from_o_model(o_model);
+
+    // for each instance, discover and attach related data
+    for(let o_instance of a_o_instance){
+        for(let o_model__candidate of a_o_model){
+            let a_o_prop__fk = o_model__candidate.a_o_property.filter(function(o_prop){
+                return o_prop.s_name !== s_name_prop_id
+                    && o_prop.s_name.startsWith('n_')
+                    && o_prop.s_name.endsWith(`_${s_name_prop_id}`);
+            });
+
+            let b_references_self = a_o_prop__fk.some(function(o_prop){
+                return o_prop.s_name === s_fk__self;
+            });
+
+            if(!b_references_self) continue;
+
+            let b_junction = a_o_prop__fk.length >= 2;
+
+            if(b_junction){
+                // junction table: follow through to the connected model
+                for(let o_prop__fk of a_o_prop__fk){
+                    if(o_prop__fk.s_name === s_fk__self) continue;
+
+                    let o_model__connected = a_o_model.find(function(o_m){
+                        return f_s_name_foreign_key__from_o_model(o_m) === o_prop__fk.s_name;
+                    });
+
+                    if(!o_model__connected) continue;
+
+                    let s_key = f_s_name_table__from_o_model(o_model__connected);
+
+                    if(a_s_name__visited.includes(o_model__connected.s_name)){
+                        o_instance[s_key] = '.';
+                    } else {
+                        let a_n_id__related = [];
+                        if(b_read_from_db){
+                            let s_name_table__junction = f_s_name_table__from_o_model(o_model__candidate);
+                            let a_o_junction = o_db.prepare(
+                                `SELECT ${o_prop__fk.s_name} FROM ${s_name_table__junction} WHERE ${s_fk__self} = ?`
+                            ).all(o_instance.n_id);
+                            a_n_id__related = a_o_junction.map(function(o_row){
+                                return o_row[o_prop__fk.s_name];
+                            });
+                        } else {
+                            let s_name_table__junction = f_s_name_table__from_o_model(o_model__candidate);
+                            let a_o_junction__cached = o_cache[s_name_table__junction] || [];
+                            a_n_id__related = a_o_junction__cached
+                                .filter(function(o_row){ return o_row[s_fk__self] === o_instance.n_id; })
+                                .map(function(o_row){ return o_row[o_prop__fk.s_name]; });
+                        }
+
+                        if(a_n_id__related.length > 0){
+                            o_instance[s_key] = f_a_o_instance__denormalized(
+                                o_model__connected, a_n_id__related, a_s_name__visited, o_cache, b_read_from_db
+                            );
+                        } else {
+                            o_instance[s_key] = [];
+                        }
+                    }
+                }
+            } else {
+                // direct foreign key: candidate belongs to this model
+                let s_key = f_s_name_table__from_o_model(o_model__candidate);
+
+                if(a_s_name__visited.includes(o_model__candidate.s_name)){
+                    o_instance[s_key] = '.';
+                } else {
+                    let a_n_id__related = [];
+                    if(b_read_from_db){
+                        let s_name_table__candidate = f_s_name_table__from_o_model(o_model__candidate);
+                        let a_o_related = o_db.prepare(
+                            `SELECT n_id FROM ${s_name_table__candidate} WHERE ${s_fk__self} = ?`
+                        ).all(o_instance.n_id);
+                        a_n_id__related = a_o_related.map(function(o_row){
+                            return o_row.n_id;
+                        });
+                    } else {
+                        let s_name_table__candidate = f_s_name_table__from_o_model(o_model__candidate);
+                        let a_o_cached__candidate = o_cache[s_name_table__candidate] || [];
+                        a_n_id__related = a_o_cached__candidate
+                            .filter(function(o_row){ return o_row[s_fk__self] === o_instance.n_id; })
+                            .map(function(o_row){ return o_row.n_id; });
+                    }
+
+                    if(a_n_id__related.length > 0){
+                        o_instance[s_key] = f_a_o_instance__denormalized(
+                            o_model__candidate, a_n_id__related, a_s_name__visited, o_cache, b_read_from_db
+                        );
+                    } else {
+                        o_instance[s_key] = [];
+                    }
+                }
+            }
+        }
+    }
+
+    return a_o_instance;
+}
 
 
 
@@ -467,5 +586,5 @@ export {
     f_db_delete_table_data,
     f_ensure_default_data,
     f_generate_model_constructors_for_cli_languages,
-    f_a_o_instance__with_relations
+    f_a_o_instance__denormalized
 };

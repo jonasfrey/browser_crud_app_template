@@ -14,7 +14,7 @@ import {
 import {
     f_init_db,
     f_v_crud__indb,
-    f_a_o_instance__with_relations,
+    f_a_o_instance__denormalized,
 } from "./database_functions.js";
 import { s_db_create } from "../localhost/runtimedata.js";
 
@@ -51,11 +51,11 @@ Deno.test("f_o_example_instance_connected_cricular_from_o_model - o_fsnode self-
     assertEquals(o.a_o_fsnode[0], '...');
 });
 
-// --- f_a_o_instance__with_relations test (require DB) ---
+// --- f_a_o_instance__denormalized test (require DB) ---
 
 let s_path__db_test = './.gitignored/test_relations.db';
 
-Deno.test("f_a_o_instance__with_relations - setup test db", async () => {
+Deno.test("f_a_o_instance__denormalized - setup test db", async () => {
     try { await Deno.remove(s_path__db_test); } catch(_e) { /* ignore */ }
     await f_init_db(s_path__db_test);
 
@@ -82,8 +82,8 @@ Deno.test("f_a_o_instance__with_relations - setup test db", async () => {
     };
 });
 
-Deno.test("f_a_o_instance__with_relations - student with one course", () => {
-    let a_o = f_a_o_instance__with_relations(o_model__o_student, [globalThis.o_test_id.n_id__daria]);
+Deno.test("f_a_o_instance__denormalized - student with one course", () => {
+    let a_o = f_a_o_instance__denormalized(o_model__o_student, [globalThis.o_test_id.n_id__daria], [], {}, true);
     console.log(JSON.stringify(a_o, null, 2));
     assertEquals(a_o.length, 1);
     assertEquals(a_o[0].s_name, 'Daria');
@@ -95,8 +95,8 @@ Deno.test("f_a_o_instance__with_relations - student with one course", () => {
     assertEquals(a_o[0].a_o_course[0].a_o_student, '.');
 });
 
-Deno.test("f_a_o_instance__with_relations - student with two course", () => {
-    let a_o = f_a_o_instance__with_relations(o_model__o_student, [globalThis.o_test_id.n_id__hansi]);
+Deno.test("f_a_o_instance__denormalized - student with two course", () => {
+    let a_o = f_a_o_instance__denormalized(o_model__o_student, [globalThis.o_test_id.n_id__hansi], [], {}, true);
     assertEquals(a_o.length, 1);
     assertEquals(a_o[0].s_name, 'Hansi');
     assertEquals(a_o[0].a_o_course.length, 2);
@@ -104,16 +104,16 @@ Deno.test("f_a_o_instance__with_relations - student with two course", () => {
     assertEquals(a_s_name__course, ['Biology', 'Math']);
 });
 
-Deno.test("f_a_o_instance__with_relations - multiple id at once", () => {
-    let a_o = f_a_o_instance__with_relations(o_model__o_student, [
+Deno.test("f_a_o_instance__denormalized - multiple id at once", () => {
+    let a_o = f_a_o_instance__denormalized(o_model__o_student, [
         globalThis.o_test_id.n_id__daria,
         globalThis.o_test_id.n_id__hansi
-    ]);
+    ], [], {}, true);
     assertEquals(a_o.length, 2);
 });
 
-Deno.test("f_a_o_instance__with_relations - from course side", () => {
-    let a_o = f_a_o_instance__with_relations(o_model__o_course, [globalThis.o_test_id.n_id__bio]);
+Deno.test("f_a_o_instance__denormalized - from course side", () => {
+    let a_o = f_a_o_instance__denormalized(o_model__o_course, [globalThis.o_test_id.n_id__bio], [], {}, true);
     assertEquals(a_o.length, 1);
     assertEquals(a_o[0].s_name, 'Biology');
     // biology has two enrolled student
@@ -123,11 +123,11 @@ Deno.test("f_a_o_instance__with_relations - from course side", () => {
     assertEquals(a_o[0].a_o_student[0].a_o_course, '.');
 });
 
-Deno.test("f_a_o_instance__with_relations - nonexistent id returns empty", () => {
-    let a_o = f_a_o_instance__with_relations(o_model__o_student, [99999]);
+Deno.test("f_a_o_instance__denormalized - nonexistent id returns empty", () => {
+    let a_o = f_a_o_instance__denormalized(o_model__o_student, [99999], [], {}, true);
     assertEquals(a_o.length, 0);
 });
 
-Deno.test("f_a_o_instance__with_relations - cleanup test db", async () => {
+Deno.test("f_a_o_instance__denormalized - cleanup test db", async () => {
     try { await Deno.remove(s_path__db_test); } catch(_e) { /* ignore */ }
 });

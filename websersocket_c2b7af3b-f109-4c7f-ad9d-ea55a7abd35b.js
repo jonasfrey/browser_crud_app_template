@@ -214,13 +214,15 @@ let f_handler = async function(o_request, o_conninfo) {
             ));
 
             for(let o_model of a_o_model){
-
+                // use data from cache / o_state
+                let s_name_table = f_s_name_table__from_o_model(o_model);
+                let a_o = o_state[s_name_table] || [];
                 o_socket.send(JSON.stringify(
                     f_o_wsmsg(
                         o_wsmsg__set_state_data.s_name,
                         {
                             s_property: f_s_name_table__from_o_model(o_model),
-                            value: f_v_crud__indb(s_db_read, f_s_name_table__from_o_model(o_model)) || []
+                            value: a_o
                         }
                     )
                 ));
