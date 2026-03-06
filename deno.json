@@ -20,6 +20,7 @@
     "uninit": "deno run --allow-read --allow-write --allow-env --env serverside/uninit.js"
   },
   "imports": {
+    "@apn/websersocketgui/constructors_framework": "./localhost/constructors_framework.js",
     "@std/fs": "jsr:@std/fs@^1.0.23"
   }
 }

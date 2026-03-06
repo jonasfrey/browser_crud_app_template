@@ -9,7 +9,7 @@ import { f_a_o_fsnode, f_o_uttdatainfo__read_or_create, f_v_result_from_o_wsmsg 
 import { f_init_python } from "./serverside/cli_functions.js";
 import {
     a_o_model,
-    f_o_model__from_s_name_table,
+    f_o_model__from_params,
     f_o_model_instance,
     o_model__o_course,
     o_model__o_wsclient,
@@ -100,7 +100,7 @@ o_wsmsg__syncdata.f_v_sync = function({s_name_table, s_operation, o_data}, o_soc
     }
     // update server o_state
     let o_data__for_state = s_operation === 'delete' ? o_data : v_result;
-    f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state);
+    f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state, s_name_prop_id);
     // broadcast to clients (read operations are not broadcast)
     if(s_operation !== 'read' && v_result){
         let s_msg = JSON.stringify(

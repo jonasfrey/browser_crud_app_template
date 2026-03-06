@@ -10,6 +10,10 @@ import {
     o_model__o_wsclient,
     f_o_example_instance_connected_cricular_from_o_model,
     f_s_name_table__from_o_model,
+    a_o_model,
+    s_name_prop_id,
+    s_name_prop_ts_created,
+    s_name_prop_ts_updated,
 } from "../localhost/constructors.js";
 import {
     f_init_db,
@@ -24,7 +28,7 @@ Deno.test("simple sanity check", () => {
 });
 
 Deno.test("f_o_example_instance_connected_cricular_from_o_model - o_course has own property", () => {
-    let o = f_o_example_instance_connected_cricular_from_o_model(o_model__o_course);
+    let o = f_o_example_instance_connected_cricular_from_o_model(o_model__o_course, [], a_o_model, s_name_prop_id, s_name_prop_ts_created, s_name_prop_ts_updated);
     console.log(o)
     assertEquals(o.n_id, 1);
     assertEquals(o.s_name, 'string');
@@ -34,7 +38,7 @@ Deno.test("f_o_example_instance_connected_cricular_from_o_model - o_course has o
 
 
 Deno.test("f_o_example_instance_connected_cricular_from_o_model - o_student nests a_o_course via junction", () => {
-    let o = f_o_example_instance_connected_cricular_from_o_model(o_model__o_student);
+    let o = f_o_example_instance_connected_cricular_from_o_model(o_model__o_student, [], a_o_model, s_name_prop_id, s_name_prop_ts_created, s_name_prop_ts_updated);
     assertEquals(Array.isArray(o.a_o_course), true);
     assertEquals(o.a_o_course.length, 1);
     assertEquals(o.a_o_course[0].n_id, 1);
@@ -44,7 +48,7 @@ Deno.test("f_o_example_instance_connected_cricular_from_o_model - o_student nest
 });
 
 Deno.test("f_o_example_instance_connected_cricular_from_o_model - o_fsnode self-reference is circular", () => {
-    let o = f_o_example_instance_connected_cricular_from_o_model(o_model__o_fsnode);
+    let o = f_o_example_instance_connected_cricular_from_o_model(o_model__o_fsnode, [], a_o_model, s_name_prop_id, s_name_prop_ts_created, s_name_prop_ts_updated);
     console.log(o)
     // self-referencing: child fsnode should be circular
     assertEquals(Array.isArray(o.a_o_fsnode), true);

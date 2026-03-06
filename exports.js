@@ -12,8 +12,8 @@ export {
 
     // model name helpers
     f_s_name_table__from_o_model,
-    f_s_name_foreign_key__from_o_model,
-    f_o_model__from_s_name_table,
+    f_s_name_foreign_key__params,
+    f_o_model__from_params,
 
     // model property name constants
     s_name_prop_ts_created,

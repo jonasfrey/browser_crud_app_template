@@ -4,11 +4,11 @@ import { Database } from "jsr:@db/sqlite@0.11";
 import {
     a_o_model,
     f_s_name_table__from_o_model,
-    f_s_name_foreign_key__from_o_model,
+    f_s_name_foreign_key__params,
     f_o_model_instance,
     s_name_prop_id,
     f_a_s_error__invalid_model_instance,
-    f_o_model__from_s_name_table,
+    f_o_model__from_params,
     s_name_prop_ts_created,
     s_name_prop_ts_updated,
     a_o_data_default,
@@ -46,7 +46,7 @@ let f_init_db = async function(s_path_db = s_path__database) {
 
             // detect foreign key
             let o_model__foreign = a_o_model.find(function(o) {
-                return f_s_name_foreign_key__from_o_model(o) === o_prop.s_name;
+                return f_s_name_foreign_key__params(o, s_name_prop_id) === o_prop.s_name;
             });
             if (o_model__foreign) {
                 let s_name_table_ref = f_s_name_table__from_o_model(o_model__foreign);
@@ -90,7 +90,7 @@ let f_init_db = async function(s_path_db = s_path__database) {
 // generic db CRUD
 
 let f_db_delete_table_data = function(s_name_table){
-    let o_model = f_o_model__from_s_name_table(s_name_table);
+    let o_model = f_o_model__from_params(s_name_table, a_o_model);
     if(!o_model) throw new Error(`Unknown table: ${s_name_table}`);
     o_db.exec('PRAGMA foreign_keys = OFF');
     let v_result = o_db.prepare(`DELETE FROM ${s_name_table}`).run();
@@ -103,7 +103,7 @@ let f_v_crud__indb = function(
     v_o_data,
     v_o_data_update
 ){
-    let o_model = f_o_model__from_s_name_table(s_name_table);
+    let o_model = f_o_model__from_params(s_name_table, a_o_model);
     if(!o_model) throw new Error(`Model not found for table ${s_name_table}`);
     let v_return = null;
     
@@ -217,8 +217,8 @@ let f_ensure_default_data = function(){
 
     // find a junction model that has foreign keys to both models (many-to-many)
     let f_o_model__junction = function(o_model_a, o_model_b){
-        let s_fk_a = f_s_name_foreign_key__from_o_model(o_model_a);
-        let s_fk_b = f_s_name_foreign_key__from_o_model(o_model_b);
+        let s_fk_a = f_s_name_foreign_key__params(o_model_a, s_name_prop_id);
+        let s_fk_b = f_s_name_foreign_key__params(o_model_b, s_name_prop_id);
         return a_o_model.find(function(o_model){
             let a_s_name_prop = o_model.a_o_property.map(function(o_prop){
                 return o_prop.s_name;
@@ -259,7 +259,7 @@ let f_ensure_default_data = function(){
                 a_o_nested.push({o_model: o_model__nested, o_instance: o_instance__nested});
             } else {
                 // check if property name matches a table name (e.g. a_o_student) with an array value
-                let o_model__related = f_o_model__from_s_name_table(s_prop);
+                let o_model__related = f_o_model__from_params(s_prop, a_o_model);
                 if(o_model__related && Array.isArray(o_data[s_prop])){
                     for(let v_element of o_data[s_prop]){
                         let o_data__element = null;
@@ -286,7 +286,7 @@ let f_ensure_default_data = function(){
             return o_prop.s_name;
         });
         for(let o_nested of a_o_nested){
-            let s_fk = f_s_name_foreign_key__from_o_model(o_nested.o_model);
+            let s_fk = f_s_name_foreign_key__params(o_nested.o_model, s_name_prop_id);
             if(a_s_name_prop__parent.includes(s_fk)){
                 o_data_plain[s_fk] = o_nested.o_instance.n_id;
             }
@@ -297,13 +297,13 @@ let f_ensure_default_data = function(){
 
         // for nested models without direct FK, create junction table entries (many-to-many)
         for(let o_nested of a_o_nested){
-            let s_fk = f_s_name_foreign_key__from_o_model(o_nested.o_model);
+            let s_fk = f_s_name_foreign_key__params(o_nested.o_model, s_name_prop_id);
             if(!a_s_name_prop__parent.includes(s_fk)){
                 let o_model__junc = f_o_model__junction(o_model, o_nested.o_model);
                 if(o_model__junc){
                     let o_junction_data = {};
-                    o_junction_data[f_s_name_foreign_key__from_o_model(o_model)] = o_instance.n_id;
-                    o_junction_data[f_s_name_foreign_key__from_o_model(o_nested.o_model)] = o_nested.o_instance.n_id;
+                    o_junction_data[f_s_name_foreign_key__params(o_model, s_name_prop_id)] = o_instance.n_id;
+                    o_junction_data[f_s_name_foreign_key__params(o_nested.o_model, s_name_prop_id)] = o_nested.o_instance.n_id;
                     f_o_instance__ensured_in_db(o_model__junc, o_junction_data);
                 } else {
                     console.warn(`No junction model found for ${o_model.s_name} <-> ${o_nested.o_model.s_name}`);
@@ -339,7 +339,7 @@ let f_a_o_instance__with_relations__old = function(o_model, a_n_id, a_s_name__vi
 
     a_s_name__visited = [...a_s_name__visited, o_model.s_name];
 
-    let s_fk__self = f_s_name_foreign_key__from_o_model(o_model);
+    let s_fk__self = f_s_name_foreign_key__params(o_model, s_name_prop_id);
 
     // for each instance, discover and attach related data
     for(let o_instance of a_o_instance){
@@ -365,7 +365,7 @@ let f_a_o_instance__with_relations__old = function(o_model, a_n_id, a_s_name__vi
                     if(o_prop__fk.s_name === s_fk__self) continue;
 
                     let o_model__connected = a_o_model.find(function(o_m){
-                        return f_s_name_foreign_key__from_o_model(o_m) === o_prop__fk.s_name;
+                        return f_s_name_foreign_key__params(o_m, s_name_prop_id) === o_prop__fk.s_name;
                     });
 
                     if(!o_model__connected) continue;
@@ -444,7 +444,7 @@ let f_a_o_instance__denormalized = function(o_model, a_n_id, a_s_name__visited =
 
     a_s_name__visited = [...a_s_name__visited, o_model.s_name];
 
-    let s_fk__self = f_s_name_foreign_key__from_o_model(o_model);
+    let s_fk__self = f_s_name_foreign_key__params(o_model, s_name_prop_id);
 
     // for each instance, discover and attach related data
     for(let o_instance of a_o_instance){
@@ -469,7 +469,7 @@ let f_a_o_instance__denormalized = function(o_model, a_n_id, a_s_name__visited =
                     if(o_prop__fk.s_name === s_fk__self) continue;
 
                     let o_model__connected = a_o_model.find(function(o_m){
-                        return f_s_name_foreign_key__from_o_model(o_m) === o_prop__fk.s_name;
+                        return f_s_name_foreign_key__params(o_m, s_name_prop_id) === o_prop__fk.s_name;
                     });
 
                     if(!o_model__connected) continue;

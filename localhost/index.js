@@ -12,6 +12,7 @@ import {
     f_o_wsmsg,
     f_o_logmsg,
     f_apply_crud_to_a_o,
+    s_name_prop_id,
     s_o_logmsg_s_type__log,
     s_o_logmsg_s_type__error,
     s_o_logmsg_s_type__warn,
@@ -277,7 +278,7 @@ let f_o_socket = function() {
 // syncdata client implementation: apply broadcasts from other clients / server
 o_wsmsg__syncdata.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state_ref){
     let v_data = o_wsmsg.v_data;
-    f_apply_crud_to_a_o(o_state_ref[v_data.s_name_table], v_data.s_operation, v_data.o_data);
+    f_apply_crud_to_a_o(o_state_ref[v_data.s_name_table], v_data.s_operation, v_data.o_data, s_name_prop_id);
 };
 
 o_wsmsg__syncdata.f_v_sync = async function({s_name_table, s_operation, o_data}){
@@ -292,7 +293,7 @@ o_wsmsg__syncdata.f_v_sync = async function({s_name_table, s_operation, o_data})
     let v_result = o_resp.v_result;
     if(s_operation !== 'read'){
         let o_data__for_state = s_operation === 'delete' ? o_data : v_result;
-        f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state);
+        f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state, s_name_prop_id);
     }
     return v_result;
 };
