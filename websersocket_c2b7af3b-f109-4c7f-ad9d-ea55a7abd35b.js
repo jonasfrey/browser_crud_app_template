@@ -47,6 +47,7 @@ import { s_db_create, s_db_read, s_db_update, s_db_delete } from "./localhost/ru
 //     Deno.exit(1);
 // }
 
+
 // we cannot simply check if a .env file exists, because env variables can also be set through other means (e.g. system environment, Deno CLI flags, etc.)
 let a_s_env_missing = [
     'PORT',
