@@ -170,6 +170,157 @@ let f_o_example_instance_connected_cricular_from_o_model = function(o_model, a_s
     return o;
 }
 
+// detect all relations for a given model by inspecting FK properties across all models
+let f_a_o_relation__from_o_model = function(o_model, a_o_model, s_name_prop_id) {
+    let a_o_relation = []
+    let s_fk__self = f_s_name_foreign_key__params(o_model, s_name_prop_id)
+
+    // 1. Direct FKs on this model (many-to-one): e.g. o_utterance has n_o_fsnode_n_id
+    for (let o_prop of o_model.a_o_property) {
+        if (o_prop.s_name === s_name_prop_id) continue
+        if (!o_prop.s_name.startsWith('n_') || !o_prop.s_name.endsWith('_' + s_name_prop_id)) continue
+
+        let o_model__target = a_o_model.find(function(o_m) {
+            return f_s_name_foreign_key__params(o_m, s_name_prop_id) === o_prop.s_name
+        })
+        if (!o_model__target) continue
+        // skip self-references to avoid infinite getter loops
+        if (o_model__target === o_model) continue
+
+        a_o_relation.push({
+            s_type: 'many_to_one',
+            s_name_getter: o_model__target.s_name,
+            s_name_fk: o_prop.s_name,
+            o_model__target: o_model__target
+        })
+    }
+
+    // 2. Find junction tables (many-to-many) and reverse FKs (one-to-many)
+    for (let o_model__candidate of a_o_model) {
+        if (o_model__candidate === o_model) continue
+
+        let a_o_prop__fk = o_model__candidate.a_o_property.filter(function(o_prop) {
+            return o_prop.s_name !== s_name_prop_id
+                && o_prop.s_name.startsWith('n_')
+                && o_prop.s_name.endsWith('_' + s_name_prop_id)
+        })
+
+        let b_references_self = a_o_prop__fk.some(function(o_prop) {
+            return o_prop.s_name === s_fk__self
+        })
+
+        if (!b_references_self) continue
+
+        let b_junction = a_o_prop__fk.length >= 2
+
+        if (b_junction) {
+            for (let o_prop__fk of a_o_prop__fk) {
+                if (o_prop__fk.s_name === s_fk__self) continue
+
+                let o_model__target = a_o_model.find(function(o_m) {
+                    return f_s_name_foreign_key__params(o_m, s_name_prop_id) === o_prop__fk.s_name
+                })
+                if (!o_model__target) continue
+
+                a_o_relation.push({
+                    s_type: 'many_to_many',
+                    s_name_getter: f_s_name_table__from_o_model(o_model__target),
+                    o_model__junction: o_model__candidate,
+                    s_name_fk__self: s_fk__self,
+                    s_name_fk__target: o_prop__fk.s_name,
+                    o_model__target: o_model__target
+                })
+            }
+        } else {
+            a_o_relation.push({
+                s_type: 'one_to_many',
+                s_name_getter: f_s_name_table__from_o_model(o_model__candidate),
+                o_model__candidate: o_model__candidate,
+                s_name_fk: s_fk__self
+            })
+        }
+    }
+
+    return a_o_relation
+}
+
+// define relation getters on a single instance
+let f_define_relation_getter = function(o_instance, a_o_relation, o_state, s_name_prop_id) {
+    for (let o_relation of a_o_relation) {
+        let s_name_getter = o_relation.s_name_getter
+        // don't override real data properties
+        if (Object.prototype.hasOwnProperty.call(o_instance, s_name_getter)) continue
+
+        Object.defineProperty(o_instance, s_name_getter, {
+            get: function() {
+                if (o_relation.s_type === 'many_to_one') {
+                    let n_id = o_instance[o_relation.s_name_fk]
+                    let s_name_table = f_s_name_table__from_o_model(o_relation.o_model__target)
+                    let a_o = o_state[s_name_table]
+                    if (!a_o) return undefined
+                    return a_o.find(function(o) { return o[s_name_prop_id] === n_id })
+                }
+                if (o_relation.s_type === 'many_to_many') {
+                    let s_name_table__junction = f_s_name_table__from_o_model(o_relation.o_model__junction)
+                    let s_name_table__target = f_s_name_table__from_o_model(o_relation.o_model__target)
+                    let a_o_junction = o_state[s_name_table__junction]
+                    let a_o_target = o_state[s_name_table__target]
+                    if (!a_o_junction || !a_o_target) return []
+                    return a_o_junction
+                        .filter(function(o) { return o[o_relation.s_name_fk__self] === o_instance[s_name_prop_id] })
+                        .map(function(o_j) {
+                            return a_o_target.find(function(o) { return o[s_name_prop_id] === o_j[o_relation.s_name_fk__target] })
+                        })
+                        .filter(Boolean)
+                }
+                if (o_relation.s_type === 'one_to_many') {
+                    let s_name_table = f_s_name_table__from_o_model(o_relation.o_model__candidate)
+                    let a_o = o_state[s_name_table]
+                    if (!a_o) return []
+                    return a_o.filter(function(o) { return o[o_relation.s_name_fk] === o_instance[s_name_prop_id] })
+                }
+            },
+            configurable: true,
+            enumerable: false
+        })
+    }
+}
+
+// precompute relation map for all models (call once)
+let f_o_relation_map__from_a_o_model = function(a_o_model, s_name_prop_id) {
+    let o_relation_map = {}
+    for (let o_model of a_o_model) {
+        o_relation_map[o_model.s_name] = f_a_o_relation__from_o_model(o_model, a_o_model, s_name_prop_id)
+    }
+    return o_relation_map
+}
+
+// define relation getters on all objects in all o_state arrays
+let f_denormalize_o_state = function(o_state, a_o_model, s_name_prop_id, o_relation_map) {
+    if (!o_relation_map) {
+        o_relation_map = f_o_relation_map__from_a_o_model(a_o_model, s_name_prop_id)
+    }
+    for (let o_model of a_o_model) {
+        let s_name_table = f_s_name_table__from_o_model(o_model)
+        let a_o = o_state[s_name_table]
+        if (!a_o) continue
+        let a_o_relation = o_relation_map[o_model.s_name]
+        if (!a_o_relation || a_o_relation.length === 0) continue
+        for (let o_instance of a_o) {
+            f_define_relation_getter(o_instance, a_o_relation, o_state, s_name_prop_id)
+        }
+    }
+    return o_relation_map
+}
+
+// define relation getters on a single new instance (call after create)
+let f_denormalize_o_instance = function(o_instance, o_model, o_state, s_name_prop_id, o_relation_map) {
+    let a_o_relation = o_relation_map[o_model.s_name]
+    if (a_o_relation && a_o_relation.length > 0) {
+        f_define_relation_getter(o_instance, a_o_relation, o_state, s_name_prop_id)
+    }
+}
+
 // shared state array mutation — used by both client and server o_wsmsg__syncdata.f_v_sync
 let f_apply_crud_to_a_o = function(a_o, s_operation, o_data, s_name_prop_id){
     if(!a_o || !o_data) return;
@@ -245,5 +396,8 @@ export{
     f_apply_crud_to_a_o,
     f_o_logmsg,
     f_o_wsmsg_def,
-    f_o_wsmsg
+    f_o_wsmsg,
+    f_o_relation_map__from_a_o_model,
+    f_denormalize_o_state,
+    f_denormalize_o_instance,
 }

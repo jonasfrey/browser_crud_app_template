@@ -17,6 +17,10 @@ import {
     s_o_logmsg_s_type__error,
     s_o_logmsg_s_type__warn,
     s_o_logmsg_s_type__info,
+    f_o_relation_map__from_a_o_model,
+    f_denormalize_o_state,
+    f_denormalize_o_instance,
+    f_o_model__from_params,
 } from './constructors.js';
 
 import {
@@ -61,6 +65,11 @@ let o_state = reactive({
 for (let o_model of a_o_model) {
     o_state[f_s_name_table__from_o_model(o_model)] = [];
 }
+
+// precompute relation map once for denormalized access (e.g. o_student.a_o_course)
+let o_relation_map = f_o_relation_map__from_a_o_model(a_o_model, s_name_prop_id);
+// store on o_state so set_state_data handler can access it for denormalization
+o_state.o_relation_map = o_relation_map;
 
 let o_socket = null;
 let a_f_handler = [];
@@ -279,6 +288,13 @@ let f_o_socket = function() {
 o_wsmsg__syncdata.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state_ref){
     let v_data = o_wsmsg.v_data;
     f_apply_crud_to_a_o(o_state_ref[v_data.s_name_table], v_data.s_operation, v_data.o_data, s_name_prop_id);
+    // denormalize newly created instance from broadcast
+    if (v_data.s_operation === 'create') {
+        let o_model = f_o_model__from_params(v_data.s_name_table, a_o_model);
+        if (o_model) {
+            f_denormalize_o_instance(v_data.o_data, o_model, o_state_ref, s_name_prop_id, o_relation_map);
+        }
+    }
 };
 
 o_wsmsg__syncdata.f_v_sync = async function({s_name_table, s_operation, o_data}){
@@ -294,6 +310,13 @@ o_wsmsg__syncdata.f_v_sync = async function({s_name_table, s_operation, o_data})
     if(s_operation !== 'read'){
         let o_data__for_state = s_operation === 'delete' ? o_data : v_result;
         f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state, s_name_prop_id);
+        // denormalize newly created instance from local sync
+        if (s_operation === 'create') {
+            let o_model = f_o_model__from_params(s_name_table, a_o_model);
+            if (o_model) {
+                f_denormalize_o_instance(o_data__for_state, o_model, o_state, s_name_prop_id, o_relation_map);
+            }
+        }
     }
     return v_result;
 };

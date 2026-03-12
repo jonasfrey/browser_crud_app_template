@@ -28,6 +28,9 @@ import {
     s_o_logmsg_s_type__error,
     s_name_prop_id,
     f_apply_crud_to_a_o,
+    f_o_relation_map__from_a_o_model,
+    f_denormalize_o_state,
+    f_denormalize_o_instance,
 } from "./localhost/constructors.js";
 import {
     s_ds,
@@ -48,15 +51,21 @@ import { s_db_create, s_db_read, s_db_update, s_db_delete } from "./localhost/ru
 // }
 
 // we cannot simply check if a .env file exists, because env variables can also be set through other means (e.g. system environment, Deno CLI flags, etc.)
-let a_s_env_missing = [
+let s_db_type__env = Deno.env.get('S_DB_TYPE') ?? 'sqlite';
+let a_s_env_required = [
     'PORT',
     'STATIC_DIR',
-    'DB_PATH',
     'MODEL_CONSTRUCTORS_CLI_LANGUAGES_PATH',
     'S_UUID',
     'BIN_PYTHON',
     'PATH_VENV',
-].filter(s => !Deno.env.get(s));
+];
+if (s_db_type__env === 'sqlite') {
+    a_s_env_required.push('DB_PATH');
+} else if (s_db_type__env === 'json') {
+    a_s_env_required.push('S_PATH__DB_JSON');
+}
+let a_s_env_missing = a_s_env_required.filter(s => !Deno.env.get(s));
 if (a_s_env_missing.length > 0) {
     console.log('Missing environment variables: ' + a_s_env_missing.join(', '));
     console.log('Set them in your .env file or environment before running the websocket server.');
@@ -101,6 +110,13 @@ o_wsmsg__syncdata.f_v_sync = function({s_name_table, s_operation, o_data}, o_soc
     // update server o_state
     let o_data__for_state = s_operation === 'delete' ? o_data : v_result;
     f_apply_crud_to_a_o(o_state[s_name_table], s_operation, o_data__for_state, s_name_prop_id);
+    // denormalize newly created instance
+    if (s_operation === 'create' && o_relation_map) {
+        let o_model = f_o_model__from_params(s_name_table, a_o_model);
+        if (o_model) {
+            f_denormalize_o_instance(o_data__for_state, o_model, o_state, s_name_prop_id, o_relation_map);
+        }
+    }
     // broadcast to clients (read operations are not broadcast)
     if(s_operation !== 'read' && v_result){
         let s_msg = JSON.stringify(
@@ -131,9 +147,22 @@ for (let o_model of a_o_model) {
     o_state[s_name_table] = o_wsmsg__syncdata.f_v_sync({s_name_table, s_operation: 'read', o_data: {}}) || [];
 }
 
+// denormalize all state objects for relation access (e.g. o_student.a_o_course)
+let o_relation_map = f_denormalize_o_state(o_state, a_o_model, s_name_prop_id);
+
 let f_broadcast_db_data = function(s_name_table) {
     let a_o_data = o_wsmsg__syncdata.f_v_sync({s_name_table, s_operation: 'read', o_data: {}}) || [];
     o_state[s_name_table] = a_o_data;
+    // re-denormalize the replaced array
+    let o_model = f_o_model__from_params(s_name_table, a_o_model);
+    if (o_model) {
+        let a_o_relation = o_relation_map[o_model.s_name];
+        if (a_o_relation && a_o_relation.length > 0) {
+            for (let o_instance of a_o_data) {
+                f_denormalize_o_instance(o_instance, o_model, o_state, s_name_prop_id, o_relation_map);
+            }
+        }
+    }
     let s_msg = JSON.stringify(
         f_o_wsmsg(
             o_wsmsg__set_state_data.s_name,

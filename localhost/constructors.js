@@ -15,6 +15,9 @@ import {
     f_o_logmsg,
     f_o_wsmsg_def,
     f_o_wsmsg,
+    f_o_relation_map__from_a_o_model,
+    f_denormalize_o_state,
+    f_denormalize_o_instance,
 } from "@apn/websersocketgui/constructors_framework"
 
 let s_name_prop_ts_created = 'n_ts_ms_created';
@@ -199,6 +202,19 @@ o_wsmsg__logmsg.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing,
 }
 o_wsmsg__set_state_data.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state){
     o_state[o_wsmsg.v_data.s_property] = o_wsmsg.v_data.value;
+    // denormalize newly arrived array if relation map is available on o_state
+    if (o_state.o_relation_map) {
+        let o_model = f_o_model__from_params(o_wsmsg.v_data.s_property, a_o_model);
+        if (o_model) {
+            let a_o_relation = o_state.o_relation_map[o_model.s_name];
+            if (a_o_relation && a_o_relation.length > 0) {
+                let a_o = o_state[o_wsmsg.v_data.s_property];
+                for (let o_instance of a_o) {
+                    f_denormalize_o_instance(o_instance, o_model, o_state, s_name_prop_id, o_state.o_relation_map);
+                }
+            }
+        }
+    }
 }
 o_wsmsg__utterance.f_v_client_implementation = function(o_wsmsg, o_wsmsg__existing, o_state){
     if(o_state.b_utterance_muted) return;
@@ -267,5 +283,8 @@ export {
     s_o_logmsg_s_type__table,
     a_o_data_default,
     f_o_example_instance_connected_cricular_from_o_model,
-    f_apply_crud_to_a_o
+    f_apply_crud_to_a_o,
+    f_o_relation_map__from_a_o_model,
+    f_denormalize_o_state,
+    f_denormalize_o_instance,
 }

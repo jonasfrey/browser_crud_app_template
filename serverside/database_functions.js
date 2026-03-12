@@ -14,14 +14,25 @@ import {
     a_o_data_default,
     f_o_example_instance_connected_cricular_from_o_model,
 } from "../localhost/constructors.js";
-import { s_ds, s_path__database, s_path__model_constructor_cli_language } from "./runtimedata.js";
+import { s_ds, s_db_type, s_path__database, s_path__model_constructor_cli_language } from "./runtimedata.js";
 import { s_db_create, s_db_read, s_db_update, s_db_delete } from "../localhost/runtimedata.js";
 import { ensureDir as f_ensure_dir } from "@std/fs";
 
+import {
+    f_init_db as f_init_db__json,
+    f_v_crud__indb as f_v_crud__indb__json,
+    f_db_delete_table_data as f_db_delete_table_data__json,
+    f_ensure_default_data as f_ensure_default_data__json,
+} from "./database_functions_json.js";
+
+let b_json = s_db_type === 'json';
 
 let o_db = null;
 
 let f_init_db = async function(s_path_db = s_path__database) {
+    if (b_json) {
+        return await f_init_db__json();
+    }
     //make sure the folder where db should be stored exists
     await Deno.mkdir(s_path_db.slice(0, s_path_db.lastIndexOf(s_ds)), { recursive: true });
 
@@ -90,6 +101,7 @@ let f_init_db = async function(s_path_db = s_path__database) {
 // generic db CRUD
 
 let f_db_delete_table_data = function(s_name_table){
+    if (b_json) return f_db_delete_table_data__json(s_name_table);
     let o_model = f_o_model__from_params(s_name_table, a_o_model);
     if(!o_model) throw new Error(`Unknown table: ${s_name_table}`);
     o_db.exec('PRAGMA foreign_keys = OFF');
@@ -103,6 +115,7 @@ let f_v_crud__indb = function(
     v_o_data,
     v_o_data_update
 ){
+    if (b_json) return f_v_crud__indb__json(s_name_crud_function, s_name_table, v_o_data, v_o_data_update);
     let o_model = f_o_model__from_params(s_name_table, a_o_model);
     if(!o_model) throw new Error(`Model not found for table ${s_name_table}`);
     let v_return = null;

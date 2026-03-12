@@ -14,13 +14,13 @@ import {
     s_name_prop_id,
     s_name_prop_ts_created,
     s_name_prop_ts_updated,
-} from "../localhost/constructors.js";
+} from "../../localhost/constructors.js";
 import {
     f_init_db,
     f_v_crud__indb,
     f_a_o_instance__denormalized,
-} from "./database_functions.js";
-import { s_db_create } from "../localhost/runtimedata.js";
+} from "../database_functions.js";
+import { s_db_create } from "../../localhost/runtimedata.js";
 
 Deno.test("simple sanity check", () => {
     let n_result = 1 + 2;
