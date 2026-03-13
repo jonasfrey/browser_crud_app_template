@@ -118,6 +118,17 @@ let f_v_crud__indb = function(
     }
 
     if (s_name_crud_function === s_db_create) {
+        // check b_unique constraints
+        let a_o__existing = o_store[s_name_table] || [];
+        for (let o_prop of o_model.a_o_property) {
+            if (!o_prop.b_unique) continue;
+            let v_val = v_o_data[o_prop.s_name];
+            if (v_val === undefined || v_val === null) continue;
+            let o_duplicate = a_o__existing.find(function(o) { return o[o_prop.s_name] === v_val; });
+            if (o_duplicate) {
+                throw new Error(`Unique constraint violation: ${o_prop.s_name} = '${v_val}' already exists in ${s_name_table}`);
+            }
+        }
         let n_id = f_n_next_id(s_name_table);
         o_model_instance.n_id = n_id;
         if (!o_store[s_name_table]) o_store[s_name_table] = [];
@@ -142,6 +153,18 @@ let f_v_crud__indb = function(
     if (s_name_crud_function === s_db_update) {
         if (!v_o_data || v_o_data[s_name_prop_id] === undefined || v_o_data[s_name_prop_id] === null) {
             throw new Error(`id property (${s_name_prop_id}) is required for update`);
+        }
+        // check b_unique constraints for updated fields
+        let a_o__all = o_store[s_name_table] || [];
+        for (let o_prop of o_model.a_o_property) {
+            if (!o_prop.b_unique) continue;
+            if (!(o_prop.s_name in v_o_data_update)) continue;
+            let v_val = v_o_data_update[o_prop.s_name];
+            if (v_val === undefined || v_val === null) continue;
+            let o_duplicate = a_o__all.find(function(o) { return o[o_prop.s_name] === v_val && o.n_id !== v_o_data[s_name_prop_id]; });
+            if (o_duplicate) {
+                throw new Error(`Unique constraint violation: ${o_prop.s_name} = '${v_val}' already exists in ${s_name_table}`);
+            }
         }
         let n_id = v_o_data[s_name_prop_id];
         let a_o = o_store[s_name_table] || [];

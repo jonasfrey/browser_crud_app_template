@@ -48,12 +48,13 @@ let f_init_db = async function(s_path_db = s_path__database) {
                 a_s_column.push('n_id INTEGER PRIMARY KEY');
                 continue;
             }
-
+            
             let s_sql_type = 'TEXT';
             if (o_prop.s_type === 'number') s_sql_type = 'REAL';
             if (o_prop.s_type === 'boolean') s_sql_type = 'INTEGER';
 
-            a_s_column.push(`${o_prop.s_name} ${s_sql_type}`);
+            let s_unique = o_prop.b_unique ? ' UNIQUE' : '';
+            a_s_column.push(`${o_prop.s_name} ${s_sql_type}${s_unique}`);
 
             // detect foreign key
             let o_model__foreign = a_o_model.find(function(o) {
@@ -149,6 +150,16 @@ let f_v_crud__indb = function(
     }
 
     if (s_name_crud_function === s_db_create) {
+        // check b_unique constraints
+        for (let o_prop of o_model.a_o_property) {
+            if (!o_prop.b_unique) continue;
+            let v_val = v_o_data[o_prop.s_name];
+            if (v_val === undefined || v_val === null) continue;
+            let o_existing = o_db.prepare(`SELECT n_id FROM ${s_name_table} WHERE ${o_prop.s_name} = ?`).get(v_val);
+            if (o_existing) {
+                throw new Error(`Unique constraint violation: ${o_prop.s_name} = '${v_val}' already exists in ${s_name_table}`);
+            }
+        }
         // v_o_data should be an instance of o_model
         let s_sql = `INSERT INTO ${s_name_table} (${a_s_name_property.join(', ')}) VALUES (${a_s_name_property.map(function() { return '?'; }).join(', ')})`;
         o_db.prepare(s_sql).run(...a_v_value);
@@ -183,6 +194,17 @@ let f_v_crud__indb = function(
         // v_o_data_update has the fields to change
         if(!v_o_data || v_o_data[s_name_prop_id] === undefined || v_o_data[s_name_prop_id] === null){
             throw new Error(`id property (${s_name_prop_id}) is required for update`);
+        }
+        // check b_unique constraints for updated fields
+        for (let o_prop of o_model.a_o_property) {
+            if (!o_prop.b_unique) continue;
+            if (!(o_prop.s_name in v_o_data_update)) continue;
+            let v_val = v_o_data_update[o_prop.s_name];
+            if (v_val === undefined || v_val === null) continue;
+            let o_existing = o_db.prepare(`SELECT n_id FROM ${s_name_table} WHERE ${o_prop.s_name} = ? AND n_id != ?`).get(v_val, v_o_data[s_name_prop_id]);
+            if (o_existing) {
+                throw new Error(`Unique constraint violation: ${o_prop.s_name} = '${v_val}' already exists in ${s_name_table}`);
+            }
         }
         let a_s_name_prop__update = Object.keys(v_o_data_update);
         let a_v_value__update = Object.values(v_o_data_update);

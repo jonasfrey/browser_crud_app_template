@@ -4,11 +4,13 @@ let f_o_property = function(
     s_name,
     s_type,
     f_b_val_valid = function(){return true},
+    b_unique = false,
 ){
     return {
         s_name,
         s_type,
-        f_b_val_valid
+        f_b_val_valid,
+        b_unique
     }
 }
 let f_o_model = function({

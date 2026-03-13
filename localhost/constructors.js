@@ -137,7 +137,7 @@ let o_model__o_keyvalpair = f_o_model({
     s_name: 'o_keyvalpair',
     a_o_property: [
         f_o_model_prop__default_id('n_id'),
-        f_o_property('s_key', 'string', (s)=>{return s!==''}),
+        f_o_property('s_key', 'string', (s)=>{return s!==''}, true),
         f_o_property('s_value', 'string', (s)=>{return s!==''}),
         f_o_model_prop__timestamp_default(s_name_prop_ts_created),
         f_o_model_prop__timestamp_default(s_name_prop_ts_updated),
