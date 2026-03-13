@@ -67,11 +67,25 @@ if (s_db_type__env === 'sqlite') {
 }
 let a_s_env_missing = a_s_env_required.filter(s => !Deno.env.get(s));
 if (a_s_env_missing.length > 0) {
-    console.log('Missing environment variables: ' + a_s_env_missing.join(', '));
-    console.log('Set them in your .env file or environment before running the websocket server.');
-    console.log('You can copy .env.example as a starting point:');
-    console.log('  cp .env.example .env');
-    Deno.exit(1);
+    // console.log('Missing environment variables: ' + a_s_env_missing.join(', '));
+    // console.log('Set them in your .env file or environment before running the websocket server.');
+    // console.log('You can copy .env.example as a starting point:');
+    // console.log('  cp .env.example .env');
+    // Deno.exit(1);
+    // copy .env.example to .env if .env is missing, to provide default values for required env variables
+    try {
+        await Deno.stat('.env');
+    } catch {
+        try {
+            await Deno.copyFile('.env.example', '.env');
+            console.log('No .env file found. Copied .env.example to .env with default values. Please review and edit the .env file as needed before running the websocket server.');
+            Deno.exit(0);
+        } catch (o_err) {
+            console.error('Failed to copy .env.example to .env:', o_err.message);
+            Deno.exit(1);
+        }
+    }
+
 }
 
 
