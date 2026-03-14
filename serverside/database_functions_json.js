@@ -10,8 +10,11 @@ import {
     f_o_model__from_params,
     s_name_prop_ts_created,
     s_name_prop_ts_updated,
-    a_o_data_default,
 } from "../localhost/constructors.js";
+import {
+    a_o_data_default,
+} from "./data_default.js";
+
 import { s_path__db_json } from "./runtimedata.js";
 import { s_db_create, s_db_read, s_db_update, s_db_delete } from "../localhost/runtimedata.js";
 
@@ -98,7 +101,7 @@ let f_v_crud__indb = function(
     if (v_o_data && s_name_crud_function !== s_db_read) {
         let a_s_error = f_a_s_error__invalid_model_instance(o_model, v_o_data);
         if (a_s_error.length > 0) {
-            throw new Error('Invalid model instance: ' + a_s_error.join('; '));
+            throw new Error('Invalid model instance: ' + a_s_error.join('\n'));
         }
     }
 
@@ -223,7 +226,21 @@ let f_ensure_default_data = function() {
             return o_cache[s_key];
         }
         let s_name_table = f_s_name_table__from_o_model(o_model);
-        let a_o_existing = f_v_crud__indb(s_db_read, s_name_table, o_data_plain);
+        // read by unique properties first so changed non-unique values don't miss existing records
+        let o_data_read = {};
+        let a_o_prop__unique = o_model.a_o_property.filter(function(o) { return o.b_unique; });
+        if (a_o_prop__unique.length > 0) {
+            for (let o_prop of a_o_prop__unique) {
+                if (o_data_plain[o_prop.s_name] !== undefined) {
+                    o_data_read[o_prop.s_name] = o_data_plain[o_prop.s_name];
+                }
+            }
+        }
+        // fall back to full data if no unique properties matched
+        if (Object.keys(o_data_read).length === 0) {
+            o_data_read = o_data_plain;
+        }
+        let a_o_existing = f_v_crud__indb(s_db_read, s_name_table, o_data_read);
         let o_instance = null;
         if (a_o_existing && a_o_existing.length > 0) {
             o_instance = a_o_existing[0];
@@ -302,7 +319,8 @@ let f_ensure_default_data = function() {
                 console.warn(`Model '${s_key}' not found in a_o_model, skipping`);
                 continue;
             }
-            f_o_instance__processed(o_model, o_entry[s_key]);
+            let o_instance = f_o_instance__processed(o_model, o_entry[s_key]);
+            o_entry[s_key].n_id = o_instance.n_id;
         }
     }
 };

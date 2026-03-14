@@ -11,9 +11,11 @@ import {
     f_o_model__from_params,
     s_name_prop_ts_created,
     s_name_prop_ts_updated,
-    a_o_data_default,
     f_o_example_instance_connected_cricular_from_o_model,
 } from "../localhost/constructors.js";
+import {
+    a_o_data_default,
+} from "./data_default.js";
 import { s_ds, s_db_type, s_path__database, s_path__model_constructor_cli_language } from "./runtimedata.js";
 import { s_db_create, s_db_read, s_db_update, s_db_delete } from "../localhost/runtimedata.js";
 import { ensureDir as f_ensure_dir } from "@std/fs";
@@ -357,7 +359,8 @@ let f_ensure_default_data = function(){
                 console.warn(`Model '${s_key}' not found in a_o_model, skipping`);
                 continue;
             }
-            f_o_instance__processed(o_model, o_entry[s_key]);
+            let o_instance = f_o_instance__processed(o_model, o_entry[s_key]);
+            o_entry[s_key].n_id = o_instance.n_id;
         }
     }
 };

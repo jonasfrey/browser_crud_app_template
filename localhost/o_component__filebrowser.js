@@ -61,7 +61,6 @@ let o_component__filebrowser = {
         return {
             s_path_absolute: '/',
             s_ds: '/',
-            n_id__keyvalpair: null,
             a_o_fsnode: [],
         };
     },
@@ -77,11 +76,10 @@ let o_component__filebrowser = {
             this.a_o_fsnode = o_resp.v_result || [];
         },
         f_save_path: async function(s_path_absolute) {
-            let o_self = this;
             await o_wsmsg__syncdata.f_v_sync({
                 s_name_table: 'a_o_keyvalpair',
                 s_operation: 'update',
-                o_data: { n_id: o_self.n_id__keyvalpair, s_key: 's_path_absolute__filebrowser', s_value: s_path_absolute }
+                o_data: { n_id: o_state.o_keyvalpair__s_path_absolute__filebrowser.n_id, s_value: s_path_absolute }
             });
         },
         f_click_fsnode: async function(o_fsnode) {
@@ -98,26 +96,18 @@ let o_component__filebrowser = {
             await this.f_load_a_o_fsnode();
         },
     },
-    created: async function() {
+    created: function() {
         let o_self = this;
-        o_self.s_ds = o_state.s_ds || '/';
-        let a_o_result = await o_wsmsg__syncdata.f_v_sync({
-            s_name_table: 'a_o_keyvalpair',
-            s_operation: 'read',
-            o_data: { s_key: 's_path_absolute__filebrowser' }
-        }) || [];
-        if (a_o_result.length > 0) {
-            o_self.s_path_absolute = a_o_result[0].s_value;
-            o_self.n_id__keyvalpair = a_o_result[0].n_id;
-        } else {
-            let o_created = await o_wsmsg__syncdata.f_v_sync({
-                s_name_table: 'a_o_keyvalpair',
-                s_operation: 'create',
-                o_data: { s_key: 's_path_absolute__filebrowser', s_value: o_self.s_path_absolute }
-            });
-            o_self.n_id__keyvalpair = o_created?.n_id;
-        }
-        await o_self.f_load_a_o_fsnode();
+        let n_id__init = setInterval(async function() {
+            let o_kv_path = o_state.o_keyvalpair__s_path_absolute__filebrowser;
+            let o_kv_ds = o_state.o_keyvalpair__s_ds;
+            if (o_kv_path && o_kv_path.s_value && o_kv_ds && o_kv_ds.s_value) {
+                clearInterval(n_id__init);
+                o_self.s_ds = o_kv_ds.s_value;
+                o_self.s_path_absolute = o_kv_path.s_value;
+                await o_self.f_load_a_o_fsnode();
+            }
+        }, 50);
     },
 };
 

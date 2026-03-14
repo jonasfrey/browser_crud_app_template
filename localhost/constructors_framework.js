@@ -56,7 +56,7 @@ let f_a_s_error__invalid_model_instance = function(
             return o_prop.s_name === s_prop;
         });
         if(!o_model_prop){
-            let s_error = `Instance has property ${s_prop} that is not defined in model ${o_model.s_name}`;
+            let s_error = `Instance ${o_instance} has property '${s_prop}' that is not defined in model ${o_model.s_name}`;
             a_s_error.push(s_error);
         }
     }

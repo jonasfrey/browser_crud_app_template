@@ -25,55 +25,6 @@ let s_name_prop_ts_updated = 'n_ts_ms_updated';
 let s_name_prop_id = 'n_id';
 
 
-let o_course__opensource101 = {
-    s_name: 'Opensource 101'
-}
-let o_course__geometry101 = {
-    s_name: 'Geometry 101'
-}
-let o_student__gretel = {
-    s_name: 'Gretel',
-    o_course: o_course__geometry101
-}
-let o_student__olaf = {
-    s_name: 'Olaf',
-    o_course: o_course__opensource101
-}
-
-let a_o_data_default = [
-    {o_student: o_student__gretel},
-    {o_student: o_student__olaf},
-    {
-        o_student: {
-            s_name: "Daria",
-            o_course: o_course__opensource101
-        }
-    },
-    {
-        o_keyvalpair: {
-            s_key: 's_path_absolute__filebrowser',
-            s_value: '/home'
-        }
-    },
-    {
-        o_course: {
-            s_name: 'Database Systems 101',
-            a_o_student: [
-                'Gretel',
-                'Olaf',
-                'Daria',
-                'Isabel',
-                'Salomon',
-                'Gandalf',
-                'Rumplestiltskin',
-                'Elizabeth',
-                'Albert',
-                'Tiffany',
-            ]
-        }
-    },
-]
-
 
 
 let o_model__o_student = f_o_model({
@@ -281,7 +232,6 @@ export {
     s_o_logmsg_s_type__info,
     s_o_logmsg_s_type__debug,
     s_o_logmsg_s_type__table,
-    a_o_data_default,
     f_o_example_instance_connected_cricular_from_o_model,
     f_apply_crud_to_a_o,
     f_o_relation_map__from_a_o_model,

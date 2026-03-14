@@ -179,9 +179,18 @@ let o_component__data = {
     methods:{
         f_s_name_table__from_o_model,
 
-        f_select_model: function(o_model2) {
+        f_select_model: async function(o_model2) {
             this.o_model = o_model2;
             this.o_instance__new = {};
+            let o_kv = o_state.o_keyvalpair__s_name_model_selected;
+            if (o_kv && o_kv.n_id && o_kv.s_value !== o_model2.s_name) {
+                await o_wsmsg__syncdata.f_v_sync({
+                    s_name_table: 'a_o_keyvalpair',
+                    s_operation: 'update',
+                    o_data: { n_id: o_kv.n_id, s_value: o_model2.s_name }
+                });
+                o_kv.s_value = o_model2.s_name;
+            }
         },
         f_clear_table: async function() {
             let o_self = this;
@@ -233,6 +242,18 @@ let o_component__data = {
         },
     },
     created: function() {
+        // restore selected model from persisted keyvalpair
+        let o_self = this;
+        let n_id__restore = setInterval(function() {
+            let o_kv = o_state.o_keyvalpair__s_name_model_selected;
+            if (o_kv && o_kv.s_value) {
+                clearInterval(n_id__restore);
+                let o_model__saved = a_o_model.find(function(o) { return o.s_name === o_kv.s_value; });
+                if (o_model__saved) {
+                    o_self.o_model = o_model__saved;
+                }
+            }
+        }, 50);
     },
     beforeUnmount: function() {
     },

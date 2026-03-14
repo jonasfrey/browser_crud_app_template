@@ -58,7 +58,7 @@ let o_state = reactive({
     ],
     n_ts_ms_now: Date.now(),
     b_utterance_muted: true,
-    o_logmsg__run_command
+    o_logmsg__run_command,
 });
 
 // auto-derive reactive keys for each model table so Vue tracks them before the server sends data
@@ -276,9 +276,39 @@ let o_app = createApp({
 globalThis.o_app = o_app;
 globalThis.o_state = o_state;
 
+// persist page navigation to DB
+let b_restoring_route = false;
+o_router.afterEach(function(o_to) {
+    if (b_restoring_route) return;
+    let o_kv = o_state.o_keyvalpair__s_path_page_selected;
+    if (o_kv && o_kv.n_id && o_kv.s_value !== o_to.path) {
+        o_wsmsg__syncdata.f_v_sync({
+            s_name_table: 'a_o_keyvalpair',
+            s_operation: 'update',
+            o_data: { n_id: o_kv.n_id, s_value: o_to.path }
+        });
+        o_kv.s_value = o_to.path;
+    }
+});
+
 o_app.use(o_router);
 
 o_app.mount('#app');
+
+// restore saved page after initial data arrives
+let n_id__restore_page = setInterval(function() {
+    let o_kv = o_state.o_keyvalpair__s_path_page_selected;
+    if (o_kv && o_kv.s_value) {
+        clearInterval(n_id__restore_page);
+        let s_path__current = o_router.currentRoute.value.path;
+        if (o_kv.s_value !== s_path__current) {
+            b_restoring_route = true;
+            o_router.push(o_kv.s_value).finally(function() {
+                b_restoring_route = false;
+            });
+        }
+    }
+}, 50);
 
 let f_o_socket = function() {
     return o_socket;

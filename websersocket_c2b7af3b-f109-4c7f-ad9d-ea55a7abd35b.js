@@ -33,6 +33,10 @@ import {
     f_denormalize_o_instance,
 } from "./localhost/constructors.js";
 import {
+    a_o_data_default,
+    o_o_keyvalpair__default,
+} from "./serverside/data_default.js";
+import {
     s_ds,
     s_root_dir,
     n_port,
@@ -164,6 +168,12 @@ for (let o_model of a_o_model) {
 // denormalize all state objects for relation access (e.g. o_student.a_o_course)
 let o_relation_map = f_denormalize_o_state(o_state, a_o_model, s_name_prop_id);
 
+// helper: look up a keyvalpair from current DB state by s_key
+let f_o_keyvalpair__from_s_key = function(s_key) {
+    let a_o = o_state.a_o_keyvalpair || [];
+    return a_o.find(function(o) { return o.s_key === s_key; }) || {};
+};
+
 let f_broadcast_db_data = function(s_name_table) {
     let a_o_data = o_wsmsg__syncdata.f_v_sync({s_name_table, s_operation: 'read', o_data: {}}) || [];
     o_state[s_name_table] = a_o_data;
@@ -235,24 +245,19 @@ let f_handler = async function(o_request, o_conninfo) {
         o_socket.onopen = async function() {
             console.log('websocket connected');
             a_o_socket.push(o_socket);
-            o_socket.send(JSON.stringify(
-                f_o_wsmsg(
-                    o_wsmsg__set_state_data.s_name,
-                    {
-                        s_property: 's_root_dir',
-                        value: s_root_dir
-                    }
-                )
-            ));
-            o_socket.send(JSON.stringify(
-                f_o_wsmsg(
-                    o_wsmsg__set_state_data.s_name,
-                    {
-                        s_property: 's_ds',
-                        value: s_ds
-                    }
-                )
-            ));
+
+
+            for (let s of Object.keys(o_o_keyvalpair__default)) {
+                o_socket.send(JSON.stringify(
+                    f_o_wsmsg(
+                        o_wsmsg__set_state_data.s_name,
+                        {
+                            s_property: s,
+                            value: f_o_keyvalpair__from_s_key(o_o_keyvalpair__default[s].s_key)
+                        }
+                    )
+                ));
+            }
 
             for(let o_model of a_o_model){
                 // use data from cache / o_state
