@@ -9,6 +9,7 @@ import {
 import {
     a_o_model,
     f_s_name_table__from_o_model,
+    f_s_name_foreign_key__params,
     f_o_model__from_params,
     s_name_prop_id,
     s_name_prop_ts_created,
@@ -61,7 +62,26 @@ let o_component__data = {
                                         'innerText': "{{ o_property.s_name }}",
                                     },
                                     {
+                                        's_tag': "select",
+                                        'v-if': "f_b_foreign_key(o_property)",
+                                        'v-model': "o_instance__new[o_property.s_name]",
+                                        a_o: [
+                                            {
+                                                's_tag': "option",
+                                                ':value': "undefined",
+                                                'innerText': "-- select --",
+                                            },
+                                            {
+                                                's_tag': "option",
+                                                'v-for': "o_option of f_a_o_option__fk(o_property)",
+                                                ':value': "o_option.n_id",
+                                                'innerText': "{{ o_option.s_label }}",
+                                            },
+                                        ]
+                                    },
+                                    {
                                         's_tag': "input",
+                                        'v-if': "!f_b_foreign_key(o_property)",
                                         ':type': "o_property.s_type === 'number' ? 'number' : 'text'",
                                         ':step': "o_property.s_type === 'number' ? 'any' : undefined",
                                         'v-model': "o_instance__new[o_property.s_name]",
@@ -127,8 +147,28 @@ let o_component__data = {
                                         ':placeholder': "o_property.s_name",
                                     },
                                     {
+                                        's_tag': "select",
+                                        'v-if': "o_property.s_type === 'number' && !a_s_name_prop__auto.includes(o_property.s_name) && f_b_foreign_key(o_property)",
+                                        ':value': "o_instance[o_property.s_name]",
+                                        'v-on:change': "f_update_property(o_instance, o_property, Number($event.target.value))",
+                                        a_o: [
+                                            {
+                                                's_tag': "option",
+                                                ':value': "undefined",
+                                                'innerText': "-- select --",
+                                            },
+                                            {
+                                                's_tag': "option",
+                                                'v-for': "o_option of f_a_o_option__fk(o_property)",
+                                                ':value': "o_option.n_id",
+                                                ':selected': "o_option.n_id === o_instance[o_property.s_name]",
+                                                'innerText': "{{ o_option.s_label }}",
+                                            },
+                                        ]
+                                    },
+                                    {
                                         's_tag': "input",
-                                        'v-if': "o_property.s_type === 'number' && !a_s_name_prop__auto.includes(o_property.s_name)",
+                                        'v-if': "o_property.s_type === 'number' && !a_s_name_prop__auto.includes(o_property.s_name) && !f_b_foreign_key(o_property)",
                                         'type': "number",
                                         'step': "any",
                                         ':value': "o_instance[o_property.s_name]",
@@ -178,6 +218,33 @@ let o_component__data = {
     },
     methods:{
         f_s_name_table__from_o_model,
+        f_b_foreign_key: function(o_property) {
+            if (o_property.s_name === s_name_prop_id) return false;
+            if (!o_property.s_name.startsWith('n_o_')) return false;
+            if (!o_property.s_name.endsWith('_' + s_name_prop_id)) return false;
+            let o_model__ref = a_o_model.find(function(o_m) {
+                return f_s_name_foreign_key__params(o_m, s_name_prop_id) === o_property.s_name;
+            });
+            return !!o_model__ref;
+        },
+        f_a_o_option__fk: function(o_property) {
+            let o_model__ref = a_o_model.find(function(o_m) {
+                return f_s_name_foreign_key__params(o_m, s_name_prop_id) === o_property.s_name;
+            });
+            if (!o_model__ref) return [];
+            let s_name_table = f_s_name_table__from_o_model(o_model__ref);
+            let a_o = o_state[s_name_table] || [];
+            let o_prop__string = o_model__ref.a_o_property.find(function(o_p) {
+                return o_p.s_type === 'string';
+            });
+            let s_name_label = o_prop__string ? o_prop__string.s_name : s_name_prop_id;
+            return a_o.map(function(o) {
+                return {
+                    n_id: o[s_name_prop_id],
+                    s_label: o[s_name_prop_id] + ' - ' + (o[s_name_label] !== undefined ? String(o[s_name_label]) : '')
+                };
+            });
+        },
 
         f_select_model: async function(o_model2) {
             this.o_model = o_model2;

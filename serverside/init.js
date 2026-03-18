@@ -49,7 +49,7 @@ let o_set__skip = new Set([
     'serverside/init.js',
     'exports.js',
     'deno.lock',
-    'CLAUDE.md',
+    // 'CLAUDE.md',
     'AI_responses_summaries.md',
     'prompts.md',
     'todo.md',

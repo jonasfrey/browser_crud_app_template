@@ -99,3 +99,6 @@ Every terminal-callable script MUST follow this structure in order:
 - First line of every source file: `// Copyright (C) [year] [Jonas Immanuel Frey] - Licensed under [license]. See LICENSE file for details`
 - `aifix` inline comments mark locations needing attention — the comment describes the issue, following lines are context to fix.
 - After each response, append a one-liner summary to `AI_responses_summaries.md`: `YYYY-MM-DD HH:MM:SS - summary of what was done`
+
+---
+after each response , if this is a git repository , make a git commit with a summary message of the changes
