@@ -5,6 +5,25 @@
 import { s_ds, s_root_dir, s_uuid, s_bin__python, s_path__venv } from './runtimedata.js';
 import { f_s_name_table__from_o_model, o_model__o_fsnode, o_model__o_utterance, o_wsmsg__syncdata } from '../localhost/constructors.js';
 
+let f_b_venv_functional = async function(s_path__venv__check){
+    // verify the venv python binary actually runs (catches broken venvs on exFAT/NTFS etc.)
+    let s_path__python__check = `${s_path__venv__check}${s_ds}bin${s_ds}python3`;
+    if (Deno.build.os === 'windows') {
+        s_path__python__check = `${s_path__venv__check}${s_ds}Scripts${s_ds}python.exe`;
+    }
+    try {
+        let o_proc__test = new Deno.Command(s_path__python__check, {
+            args: ['-c', 'import sys; print(sys.executable)'],
+            stdout: 'piped',
+            stderr: 'piped',
+        });
+        let o_result__test = await o_proc__test.output();
+        return o_result__test.success;
+    } catch {
+        return false;
+    }
+}
+
 let f_init_python = async function(){
     let a_s_package = ['python-dotenv', 'pyttsx3'];
 
@@ -29,6 +48,25 @@ let f_init_python = async function(){
             return;
         }
         console.log('[f_init_python] venv created');
+    }
+
+    // verify venv is functional (may fail on filesystems like exFAT that lack symlink/permission support)
+    let b_functional = await f_b_venv_functional(s_path__venv);
+    if (!b_functional) {
+        console.error('');
+        console.error('='.repeat(80));
+        console.error('[f_init_python] ERROR: Python venv is not functional!');
+        console.error(`  venv path: ${s_path__venv}`);
+        console.error('');
+        console.error('  This usually happens when the project directory is on a filesystem that does');
+        console.error('  not support symlinks or Unix permissions (e.g. exFAT, FAT32, some NTFS mounts).');
+        console.error('');
+        console.error('  To fix this, change PATH_VENV in your .env file to a path on a filesystem');
+        console.error('  that supports symlinks, for example:');
+        console.error('    PATH_VENV=/home/<your_user>/venvs/browser_crud_app_venv');
+        console.error('='.repeat(80));
+        console.error('');
+        return;
     }
 
     let s_path__pip = `${s_path__venv}${s_ds}bin${s_ds}pip`;
