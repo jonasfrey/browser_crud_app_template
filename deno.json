@@ -1,6 +1,6 @@
 {
   "name": "@apn/websersocketgui",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "license": "GPL-2.0-only",
   "exports": {
     ".": "./exports.js",
